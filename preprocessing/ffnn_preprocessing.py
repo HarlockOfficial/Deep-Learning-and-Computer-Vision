@@ -5,7 +5,7 @@ from typing import Dict
 from dotenv import load_dotenv
 import requests
 
-import preprocessing.utility as utility
+import utility
 
 logger = utility.default_logger(__file__)
 
@@ -14,7 +14,8 @@ def extract_all_chemical_features(feature_list_file_path: str) -> Dict[str, Dict
     """
         Read the feature codes from the file feature_list_file_path.
         Extract the chemical features using the function extract_chemical_feature.
-        Return a dictionary of dictionaries, where the key is the feature code and the value is the dictionary containing the chemical features.
+        Return a dictionary of dictionaries, where the key is the feature code and the value
+        is the dictionary containing the chemical features.
     """
     with open(feature_list_file_path, 'r') as f:
         feature_list = f.readlines()
@@ -31,7 +32,7 @@ def extract_all_chemical_features(feature_list_file_path: str) -> Dict[str, Dict
 def extract_chemical_feature(feature_code: str) -> Dict[str, float]:
     """
         Extract chemical features from the data provided by the website
-        reachable using the envirnonment variable 'AAINDEX_WEBSITE_URL'.
+        reachable using the environment variable 'AAINDEX_WEBSITE_URL'.
         The request should be made to the url AAINDEX_WEBSITE_URL + feature_code.
         The response is a html file.
     """
@@ -80,7 +81,8 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--feature_list_file_path', type=str, help='the path to the file containing the list of feature codes')
+    parser.add_argument('--feature_list_file_path', type=str,
+                        help='the path to the file containing the list of feature codes')
     parser.add_argument('--chemical_feature_code', type=str, help='the chemical feature code to extract')
     utility.add_default_parameters(parser)
     parser.add_argument('--output_file_path', type=str, default=None, help='the path to the output file')
