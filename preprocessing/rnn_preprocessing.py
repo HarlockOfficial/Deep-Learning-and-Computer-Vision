@@ -27,20 +27,16 @@ def extract_rnn_data(dataset_file_name: str) -> List[Tuple[str, str]]:
     p = PDBParser(PERMISSIVE=True)
     structure = p.get_structure('protein', dataset_file_name)
     out = []
-    for model in structure.get_residues():
-        logger.debug("processing model: " + str(model))
-        for chain in model:
-            logger.debug("processing chain: " + str(chain))
-            for residue in chain:
-                logger.debug("processing residue: " + str(residue))
-                if residue.get_resname() == 'HOH':
-                    logger.debug("skipping residue: " + str(residue))
-                    continue
-                residue_name = residue.get_resname()
-                logger.debug("residue name: " + str(residue_name))
-                protein_name = dataset_file_name.split('/')[-1].split('.')[0]
-                logger.debug("protein name: " + str(protein_name))
-                out.append((residue_name, protein_name))
+    for residue in structure.get_residues():
+        logger.debug("processing residue: " + str(residue))
+        if residue.get_resname() == 'HOH':
+            logger.debug("skipping residue: " + str(residue))
+            continue
+        residue_name = residue.get_resname()
+        logger.debug("residue name: " + str(residue_name))
+        protein_name = dataset_file_name.split('/')[-1].split('.')[0]
+        logger.debug("protein name: " + str(protein_name))
+        out.append((residue_name, protein_name))
     return out
 
 
