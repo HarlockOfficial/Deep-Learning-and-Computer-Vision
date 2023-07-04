@@ -10,7 +10,25 @@ import preprocessing.utility as utility
 logger = utility.default_logger(__file__)
 
 
-def extract_chemical_features(feature_code: str) -> Dict[str, float]:
+def extract_all_chemical_features(feature_list_file_path: str) -> Dict[str, Dict[str, float]]:
+    """
+        Read the feature codes from the file feature_list_file_path.
+        Extract the chemical features using the function extract_chemical_feature.
+        Return a dictionary of dictionaries, where the key is the feature code and the value is the dictionary containing the chemical features.
+    """
+    with open(feature_list_file_path, 'r') as f:
+        feature_list = f.readlines()
+
+    feature_list = [feature.strip() for feature in feature_list]
+    logger.debug('Feature list: {}'.format(feature_list))
+    out = dict()
+    for feature in feature_list:
+        out[feature] = extract_chemical_feature(feature)
+    logger.debug('Out: {}'.format(out))
+    return out
+
+
+def extract_chemical_feature(feature_code: str) -> Dict[str, float]:
     """
         Extract chemical features from the data provided by the website
         reachable using the envirnonment variable 'AAINDEX_WEBSITE_URL'.
@@ -62,15 +80,20 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('chemical_feature_code', type=str, help='the chemical feature code to extract')
+    parser.add_argument('--feature_list_file_path', type=str, help='the path to the file containing the list of feature codes')
+    parser.add_argument('--chemical_feature_code', type=str, help='the chemical feature code to extract')
     utility.add_default_parameters(parser)
     parser.add_argument('--output_file_path', type=str, default=None, help='the path to the output file')
 
     args = parser.parse_args()
 
     utility.default_logging(args, logger)
-
-    data = extract_chemical_features(args.chemical_feature_code)
+    if args.feature_list_file_path is not None:
+        data = extract_all_chemical_features(args.feature_list_file_path)
+    elif args.chemical_feature_code is not None:
+        data = extract_chemical_feature(args.chemical_feature_code)
+    else:
+        raise ValueError('Either feature_list_file_path or chemical_feature_code must be specified.')
     if args.output_file_path is None:
         print(data)
     else:
