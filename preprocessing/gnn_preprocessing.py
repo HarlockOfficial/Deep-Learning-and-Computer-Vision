@@ -8,6 +8,36 @@ import utility
 logger = utility.default_logger(__file__)
 
 
+def create_distance_matrix(aminoacid_mass_center: List[Tuple[float, float, float, str, str]]) -> List[List[float]]:
+    """
+        Creates a distance matrix from the provided list of amino acids.
+
+        :param aminoacid_mass_center: the list of amino acids
+        :returns a distance matrix
+    """
+    out = []
+    for i in range(len(aminoacid_mass_center)):
+        out.append([])
+        for j in range(len(aminoacid_mass_center)):
+            out[i].append(utility.euclidean_distance(aminoacid_mass_center[i][:3], aminoacid_mass_center[j][:3]))
+    return out
+
+
+def create_contact_matrix(distance_matrix: List[List[float]], threshold: float = 12) -> List[List[int]]:
+    """
+        Creates a contact matrix from the provided distance matrix.
+    """
+    out = []
+    for i in range(len(distance_matrix)):
+        out.append([])
+        for j in range(len(distance_matrix)):
+            if distance_matrix[i][j] <= threshold:
+                out[i].append(1)
+            else:
+                out[i].append(0)
+    return out
+
+
 def extract_gnn_data(dataset_file_name: str) -> List[Tuple[float, float, float, str, str]]:
     """
         Using BioPython, reads the provided pdb input file.
