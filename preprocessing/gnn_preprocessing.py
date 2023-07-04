@@ -1,16 +1,11 @@
 import json
-import os.path
 from typing import List, Tuple
 
 from Bio.PDB import PDBParser
 
-import sys
-if os.path.dirname(os.path.dirname(os.path.abspath(__file__))) not in sys.path:
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import preprocessing.utility as utility
 
-from my_logging import Logger
-
-logger = Logger()
+logger = utility.default_logger(__file__)
 
 
 def extract_gnn_data(dataset_file_name: str) -> List[Tuple[float, float, float, str, str]]:
@@ -62,34 +57,12 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('pdb_file_path', type=str, help='the path to the pdb input file')
-    parser.add_argument('--debug', action='store_true', help='enable debug mode')
-    parser.add_argument('--debug_log_file_path', type=str, default='pdb_data/logs/debug.log', help='the path to the debug log file')
-    parser.add_argument('--verbose', action='store_true', help='enable verbose mode')
-    parser.add_argument('--verbose_log_file_path', type=str, default='pdb_data/logs/verbose.log', help='the path to the verbose log file')
-    parser.add_argument('--warning', action='store_true', help='enable warning mode')
-    parser.add_argument('--warning_log_file_path', type=str, default='pdb_data/logs/warning.log', help='the path to the warning log file')
-    parser.add_argument('--error', action='store_true', help='enable error mode')
-    parser.add_argument('--error_log_file_path', type=str, default='pdb_data/logs/error.log', help='the path to the error log file')
-    parser.add_argument('--critical', action='store_true', help='enable critical mode')
-    parser.add_argument('--critical_log_file_path', type=str, default='pdb_data/logs/critical.log', help='the path to the critical log file')
+    utility.add_default_parameters(parser)
     parser.add_argument('--output_file_path', type=str, default=None, help='the path to the output file')
 
     args = parser.parse_args()
-    if args.critical:
-        logger.enable('CRITICAL')
-        logger.add_file_path('CRITICAL', args.critical_log_file_path)
-    if args.error:
-        logger.enable('ERROR')
-        logger.add_file_path('ERROR', args.error_log_file_path)
-    if args.warning:
-        logger.enable('WARNING')
-        logger.add_file_path('WARNING', args.warning_log_file_path)
-    if args.verbose:
-        logger.enable('INFO')
-        logger.add_file_path('INFO', args.verbose_log_file_path)
-    if args.debug:
-        logger.enable('DEBUG')
-        logger.add_file_path('DEBUG', args.debug_log_file_path)
+
+    utility.default_logging(args, logger)
 
     data = extract_gnn_data(args.pdb_file_path)
     if args.output_file_path is None:
