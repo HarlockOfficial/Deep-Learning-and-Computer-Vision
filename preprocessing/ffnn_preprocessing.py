@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict
+from typing import Dict, Union
 
 from dotenv import load_dotenv
 import requests
@@ -65,7 +65,7 @@ def extract_chemical_feature(feature_code: str) -> Dict[str, float]:
     return out
 
 
-def dump_to_file(feature_dict: Dict[str, float], output_file_path: str):
+def dump_to_file(feature_dict: Union[Dict[str, float], Dict[str, Dict[str, float]]] , output_file_path: str):
     """
         Dump the data to a file named feature_code.txt.
     """

@@ -6,7 +6,7 @@ In this folder, we have the following subfolders:
 - `validation`: validation dataset
 - `logs`: logs of the training process
 - `plots`: plots of the training process
-- `weights`: weights of the model
+- `models`: model related data (eg. weights)
 - `metrics`: metrics of the model
 
 ## Dataset

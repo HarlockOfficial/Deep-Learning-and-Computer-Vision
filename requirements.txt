@@ -1,3 +1,5 @@
 biopython==1.81
 python-dotenv==1.0.0
 requests==2.31.0
+spektral==1.3.0
+tensorflow==2.12.0
