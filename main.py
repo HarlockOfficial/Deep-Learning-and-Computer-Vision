@@ -4,25 +4,23 @@ import training.recurrent_network
 logger = utility.default_logger(__file__)
 
 
-def preprocessing_rnn_gnn(dataset_path: str, interaction_distance: float, output_path: str = None):
+def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float, output_path: str = None):
     """
         This function will be used to preprocess the dataset.
         It will return the preprocessed data.
     """
     logger.info("Preprocessing the dataset")
     import preprocessing
-    preprocessed_rrn_data = preprocessing.rnn_preprocessing.extract_rnn_data(dataset_path)
+    preprocessed_rrn_data = preprocessing.rnn_preprocessing.extract_rnn_data(pdb_path)
     if output_path is not None:
         preprocessing.rnn_preprocessing.dump_to_file(preprocessed_rrn_data, output_path)
     expected_results = preprocessing.determine_interface\
-        .compute_all_interfaces(interaction_distance=interaction_distance,
-                                dataset_list=[dataset_path])
+        .compute_interface(interaction_distance=interaction_distance, pdb_path=pdb_path)
     if expected_results is None:
         logger.critical("Could not compute the interacting interface for the dataset.")
         exit(1)
-    expected_results = expected_results[dataset_path]
 
-    preprocessed_gnn_data = preprocessing.gnn_preprocessing.extract_gnn_data(dataset_path)
+    preprocessed_gnn_data = preprocessing.gnn_preprocessing.extract_gnn_data(pdb_path)
     if output_path is not None:
         preprocessing.gnn_preprocessing.dump_to_file(preprocessed_gnn_data, output_path)
     distance_matrix = preprocessing.gnn_preprocessing.create_distance_matrix(preprocessed_gnn_data)
@@ -42,10 +40,10 @@ def preprocess_chemical_features(chemical_features_path: str, output_path: str =
     return preprocessed_chemical_features
 
 
-def main(dataset_path: str, chemical_features_path: str, interaction_distance: float, output_path=None):
+def main(pdb_path: str, chemical_features_path: str, interaction_distance: float, output_path=None):
     logger.info("Obtaining preprocessed data")
     preprocessed_rrn_data, expected_results, preprocessed_gnn_data = preprocessing_rnn_gnn(
-        dataset_path, interaction_distance, output_path)
+        pdb_path, interaction_distance, output_path)
     logger.info("Obtaining preprocessed chemical features")
     preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)
 
@@ -87,7 +85,7 @@ if __name__ == "__main__":
     import argparse
 
     args = argparse.ArgumentParser()
-    args.add_argument("dataset_path", help="Path to the dataset")
+    args.add_argument("pdb_path", help="Path to the pdb")
     args.add_argument("chemical_features_path", help="Path to the chemical features")
     args.add_argument("--interaction_distance", default=6.0, type=float, help="Interaction distance")
     args.add_argument("-o", "--output", default=None, help="Path to the output folder")
@@ -97,5 +95,5 @@ if __name__ == "__main__":
     utility.default_logging(args, logger)
 
     logger.info("Starting the program")
-    main(args.dataset_path, args.chemical_features_path, args.output)
+    main(args.pdb_path, args.chemical_features_path, args.output)
     logger.info("Program finished")

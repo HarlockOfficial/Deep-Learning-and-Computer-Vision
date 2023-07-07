@@ -37,44 +37,10 @@ def compute_interacting_interface(folder_path: str, pdb_parser: PDBParser, inter
         logger.info(f"Folder {folder_path} does not exist!")
         return None
     for pdb_file_1 in sorted(glob(f"{folder_path}/*.pdb")):
-        logger.info(f"Computing interacting interface for {pdb_file_1}.")
-
         pdb_id_1 = re.sub("\.pdb$", "", os.path.basename(pdb_file_1))
-        pdb_id_2 = get_binding_partner_id(pdb_id_1)
-
         if pdb_id_1 not in out.keys():
             out[pdb_id_1] = list()
-
-        logger.info(f"Computing interacting interface for {pdb_id_1} - {pdb_id_2}.")
-
-        pdb_file_2 = f"{folder_path}/{pdb_id_2}.pdb"
-
-        logger.info(f"Computing interacting interface for {pdb_file_2}.")
-
-        p1_structure = pdb_parser.get_structure(pdb_id_1, pdb_file_1)
-        p2_structure = pdb_parser.get_structure(pdb_id_2, pdb_file_2)
-
-        p1_heavy_atoms = [atom for atom in p1_structure.get_atoms() if not is_hydrogen(atom)]
-        p2_heavy_atoms = [atom for atom in p2_structure.get_atoms() if not is_hydrogen(atom)]
-
-        p1_tree = NeighborSearch(p1_heavy_atoms)
-        p1_interface = set()
-
-        for atom in p2_heavy_atoms:
-            nb_list = p1_tree.search(atom.coord, interaction_distance, "R")
-            p1_interface = p1_interface.union(nb_list)
-
-        if not p1_interface:
-            logger.info(f"No interface residues for PDB id {pdb_id_1}, in folder {folder_path}")
-
-        for residue in p1_structure.get_residues():
-            if is_hetero(residue):
-                continue
-            chain_id = residue.get_full_id()[2]
-            residue_id = residue.get_full_id()[3][1]
-            residue_name = residue.get_resname()
-            is_interface = True if residue in p1_interface else False
-            out[pdb_id_1].append((chain_id, residue_id, residue_name, is_interface))
+        out[pdb_id_1].append(compute_interacting_interface_for_single_file(pdb_file_1, pdb_parser, interaction_distance))
     return out
 
 
@@ -116,6 +82,58 @@ def dump_to_file_csv(determined_interface: Union[
             f.write("chain_id,residue_id,residue_name,is_interface\n")
             for row in determined_interface:
                 f.write(f"{row[0]},{row[1]},{row[2]},{row[3]}\n")
+
+
+def compute_interacting_interface_for_single_file(pdb_path: str, pdb_parser: PDBParser, interaction_distance: float = 6.0):
+    logger.info(f"Computing interacting interface for {pdb_path}.")
+
+    pdb_id_1 = re.sub("\.pdb$", "", os.path.basename(pdb_path))
+    folder_path = os.path.dirname(pdb_path)
+    pdb_id_2 = get_binding_partner_id(pdb_id_1)
+
+    logger.info(f"Computing interacting interface for {pdb_id_1} - {pdb_id_2}.")
+
+    pdb_file_2 = f"{folder_path}/{pdb_id_2}.pdb"
+
+    logger.info(f"Computing interacting interface for {pdb_file_2}.")
+
+    p1_structure = pdb_parser.get_structure(pdb_id_1, pdb_path)
+    p2_structure = pdb_parser.get_structure(pdb_id_2, pdb_file_2)
+
+    p1_heavy_atoms = [atom for atom in p1_structure.get_atoms() if not is_hydrogen(atom)]
+    p2_heavy_atoms = [atom for atom in p2_structure.get_atoms() if not is_hydrogen(atom)]
+
+    p1_tree = NeighborSearch(p1_heavy_atoms)
+    p1_interface = set()
+
+    for atom in p2_heavy_atoms:
+        nb_list = p1_tree.search(atom.coord, interaction_distance, "R")
+        p1_interface = p1_interface.union(nb_list)
+
+    if not p1_interface:
+        logger.info(f"No interface residues for PDB id {pdb_id_1}, in folder {folder_path}")
+    out = []
+    for residue in p1_structure.get_residues():
+        if is_hetero(residue):
+            continue
+        chain_id = residue.get_full_id()[2]
+        residue_id = residue.get_full_id()[3][1]
+        residue_name = residue.get_resname()
+        is_interface = True if residue in p1_interface else False
+        out.append((chain_id, residue_id, residue_name, is_interface))
+    return out
+
+
+def compute_interface(interaction_distance: float = 6.0, pdb_path: str = None) -> \
+        Union[None, List[Tuple[str, int, str, bool]]]:
+    pdb_parser = PDBParser(QUIET=True, PERMISSIVE=True)
+    if pdb_path is None:
+        logger.critical(
+            "No dataset list provided. Please provide a list of datasets to compute the interacting interface for.")
+        exit(1)
+    logger.info(f"Computing interacting interface for {pdb_path} dataset.")
+    result = compute_interacting_interface_for_single_file(pdb_path, pdb_parser, interaction_distance)
+    return result
 
 
 def compute_all_interfaces(interaction_distance: float = 6.0, dataset_list: List[str] = None) -> \
