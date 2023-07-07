@@ -9,7 +9,7 @@ class Logger(object):
             cls.instance = super(Logger, cls).__new__(cls)
         return cls.instance
 
-    def __init__(self, min_level=logging.CRITICAL, log_file_path=None):
+    def __init__(self, min_level=logging.INFO, log_file_path=None):
         logger = logging.getLogger('my_logging')
         logger.setLevel(min_level)
         self.__formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
