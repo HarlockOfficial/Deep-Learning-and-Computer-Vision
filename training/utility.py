@@ -1,11 +1,9 @@
 import os
-from typing import Type
-
 import numpy as np
 import tensorflow as tf
 
 
-def train_network(model: Type[tf.keras.models.Model], n_output_labels, x_train, y_train):
+def train_network(model: type[tf.keras.models.Model], n_output_labels, x_train, y_train):
     model = model(n_label=n_output_labels, activation='relu', output_activation='linear', use_bias=True)
     if os.path.exists('data/models/graph_convolutional_network/weights.h5'):
         model.load_weights('data/models/graph_convolutional_network/weights.h5')
@@ -24,7 +22,7 @@ def train_network(model: Type[tf.keras.models.Model], n_output_labels, x_train, 
     return model
 
 
-def test_network(model: Type[tf.keras.models.Model], n_output_labels, x_test, y_test):
+def test_network(model: type[tf.keras.models.Model], n_output_labels, x_test, y_test):
     model = model(n_label=n_output_labels, activation='relu', output_activation='linear', use_bias=True)
     model.load_weights('data/models/graph_convolutional_network/weights.h5')
     model.compile(optimizer='adam', loss='mse', metrics=['mae'])

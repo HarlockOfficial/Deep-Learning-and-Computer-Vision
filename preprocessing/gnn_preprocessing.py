@@ -1,5 +1,4 @@
 import json
-from typing import List, Tuple
 
 from Bio.PDB import PDBParser
 
@@ -8,7 +7,7 @@ import utility
 logger = utility.default_logger(__file__)
 
 
-def create_distance_matrix(aminoacid_mass_center: List[Tuple[str, int, str, float, float, float]]) -> List[List[Tuple[str, int, str, str, int, str, float]]]:
+def create_distance_matrix(aminoacid_mass_center: list[tuple[str, int, str, float, float, float]]) -> list[list[tuple[str, int, str, str, int, str, float]]]:
     """
         Creates a distance matrix from the provided list of amino acids.
 
@@ -23,7 +22,7 @@ def create_distance_matrix(aminoacid_mass_center: List[Tuple[str, int, str, floa
     return out
 
 
-def create_contact_matrix(distance_matrix: List[List[Tuple[str, int, str, str, int, str, float]]], threshold: float = 12) -> List[List[int]]:
+def create_contact_matrix(distance_matrix: list[list[tuple[str, int, str, str, int, str, float]]], threshold: float = 12) -> list[list[int]]:
     """
         Creates a contact matrix from the provided distance matrix.
     """
@@ -38,7 +37,7 @@ def create_contact_matrix(distance_matrix: List[List[Tuple[str, int, str, str, i
     return out
 
 
-def dump_to_file_matrix(matrix: List[List[float]], output_file_path: str):
+def dump_to_file_matrix(matrix: list[list[float]], output_file_path: str):
     """
         Dumps the provided data to the provided output file path.
 
@@ -52,7 +51,7 @@ def dump_to_file_matrix(matrix: List[List[float]], output_file_path: str):
             f.write("\n")
 
 
-def extract_gnn_data(dataset_file_name: str) -> List[Tuple[str, int, str, float, float, float]]:
+def extract_gnn_data(dataset_file_name: str) -> list[tuple[str, int, str, float, float, float]]:
     """
         Using BioPython, reads the provided pdb input file.
         For each amino acid obtains the center of mass, the residue name and the related protein name.
@@ -82,7 +81,7 @@ def extract_gnn_data(dataset_file_name: str) -> List[Tuple[str, int, str, float,
     return out
 
 
-def dump_to_file(pdb_data: List[Tuple[str, int, str, float, float, float]], output_file_path: str):
+def dump_to_file(pdb_data: list[tuple[str, int, str, float, float, float]], output_file_path: str):
     """
         Dumps the provided data to the provided output file path.
 
@@ -93,7 +92,7 @@ def dump_to_file(pdb_data: List[Tuple[str, int, str, float, float, float]], outp
         json.dump(pdb_data, f)
 
 
-def dump_to_file_csv(pdb_data: List[Tuple[str, int, str, float, float, float]], output_file_path: str):
+def dump_to_file_csv(pdb_data: list[tuple[str, int, str, float, float, float]], output_file_path: str):
     """
         Dumps the provided data to the provided output file path.
 

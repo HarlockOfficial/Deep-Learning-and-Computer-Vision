@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, Union
+from typing import Union
 
 from dotenv import load_dotenv
 import requests
@@ -10,7 +10,7 @@ import utility
 logger = utility.default_logger(__file__)
 
 
-def extract_all_chemical_features(feature_list_file_path: str) -> Dict[str, Dict[str, float]]:
+def extract_all_chemical_features(feature_list_file_path: str) -> dict[str, dict[str, float]]:
     """
         Read the feature codes from the file feature_list_file_path.
         Extract the chemical features using the function extract_chemical_feature.
@@ -29,7 +29,7 @@ def extract_all_chemical_features(feature_list_file_path: str) -> Dict[str, Dict
     return out
 
 
-def extract_chemical_feature(feature_code: str) -> Dict[str, float]:
+def extract_chemical_feature(feature_code: str) -> dict[str, float]:
     """
         Extract chemical features from the data provided by the website
         reachable using the environment variable 'AAINDEX_WEBSITE_URL'.
@@ -65,7 +65,7 @@ def extract_chemical_feature(feature_code: str) -> Dict[str, float]:
     return out
 
 
-def dump_to_file(feature_dict: Union[Dict[str, float], Dict[str, Dict[str, float]]], output_file_path: str):
+def dump_to_file(feature_dict: Union[dict[str, float], dict[str, dict[str, float]]], output_file_path: str):
     """
         Dump the data to a file in json format.
     """
@@ -73,7 +73,7 @@ def dump_to_file(feature_dict: Union[Dict[str, float], Dict[str, Dict[str, float
         json.dump(feature_dict, f)
 
 
-def dump_to_file_csv(feature_dict: Union[Dict[str, float], Dict[str, Dict[str, float]]], output_file_path: str):
+def dump_to_file_csv(feature_dict: Union[dict[str, float], dict[str, dict[str, float]]], output_file_path: str):
     """
         Dump the data to a file in csv format.
     """

@@ -1,5 +1,4 @@
 import json
-from typing import List, Tuple
 
 from Bio.PDB import PDBParser
 
@@ -8,7 +7,7 @@ import utility
 logger = utility.default_logger(__file__)
 
 
-def extract_rnn_data(dataset_file_name: str) -> List[Tuple[str, int, str]]:
+def extract_rnn_data(dataset_file_name: str) -> list[tuple[str, int, str]]:
     """
         Using BioPython, reads the provided pdb input file.
         For each amino acid obtains the residue name and the related protein name.
@@ -34,7 +33,7 @@ def extract_rnn_data(dataset_file_name: str) -> List[Tuple[str, int, str]]:
     return out
 
 
-def dump_to_file(pdb_data: List[Tuple[str, int, str]], output_file_path: str):
+def dump_to_file(pdb_data: list[tuple[str, int, str]], output_file_path: str):
     """
         Dumps the provided data to the provided output file path.
 
@@ -45,7 +44,7 @@ def dump_to_file(pdb_data: List[Tuple[str, int, str]], output_file_path: str):
         json.dump(pdb_data, f)
 
 
-def dump_to_file_csv(pdb_data: List[Tuple[str, int, str]], output_file_path: str):
+def dump_to_file_csv(pdb_data: list[tuple[str, int, str]], output_file_path: str):
     """
         Dumps the provided data to the provided output file path.
 

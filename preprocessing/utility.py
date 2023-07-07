@@ -1,6 +1,4 @@
 import argparse
-from typing import Tuple
-
 
 def add_default_parameters(parser: argparse.ArgumentParser):
     parser.add_argument('--debug', action='store_true', help='enable debug mode')
@@ -60,6 +58,6 @@ def get_residue_name_and_protein_name(residue, chain, dataset_file_name, logger)
     return residue_name, residue_id, protein_name
 
 
-def euclidean_distance(position1: Tuple[float, float, float], position2: Tuple[float, float, float]):
+def euclidean_distance(position1: tuple[float, float, float], position2: tuple[float, float, float]):
     import math
     return math.sqrt(sum([(position1[i] - position2[i]) ** 2 for i in range(len(position1))]))

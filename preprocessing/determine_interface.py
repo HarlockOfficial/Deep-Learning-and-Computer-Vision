@@ -3,7 +3,7 @@ import json
 import os
 import re
 from glob import glob
-from typing import Union, List, Tuple, Dict
+from typing import Union
 
 from Bio.PDB import NeighborSearch
 from Bio.PDB.PDBParser import PDBParser
@@ -31,7 +31,7 @@ def get_binding_partner_id(partner_pdb_id):
 
 
 def compute_interacting_interface(folder_path: str, pdb_parser: PDBParser, interaction_distance: float) \
-        -> Union[None, Dict[str, List[Tuple[str, int, str, int]]]]:
+        -> Union[None, dict[str, list[tuple[str, int, str, int]]]]:
     out = dict()
     if not os.path.exists(folder_path):
         logger.info(f"Folder {folder_path} does not exist!")
@@ -45,7 +45,7 @@ def compute_interacting_interface(folder_path: str, pdb_parser: PDBParser, inter
 
 
 def dump_to_file(determined_interface: Union[
-    List[Tuple[str, int, str, int]], Dict[str, List[Tuple[str, int, str, int]]]],
+    list[tuple[str, int, str, int]], dict[str, list[tuple[str, int, str, int]]]],
                  destination_path: str):
     """
         Dumps the determined interface to a json file.
@@ -63,7 +63,7 @@ def dump_to_file(determined_interface: Union[
 
 
 def dump_to_file_csv(determined_interface: Union[
-    List[Tuple[str, int, str, int]], Dict[str, List[Tuple[str, int, str, int]]]],
+    list[tuple[str, int, str, int]], dict[str, list[tuple[str, int, str, int]]]],
                      destination_path: str):
     """
         Dumps the determined interface to a csv file.
@@ -126,7 +126,7 @@ def compute_interacting_interface_for_single_file(pdb_path: str, pdb_parser: PDB
 
 
 def compute_interface(interaction_distance: float = 6.0, pdb_path: str = None) -> \
-        Union[None, List[Tuple[str, int, str, int]]]:
+        Union[None, list[tuple[str, int, str, int]]]:
     pdb_parser = PDBParser(QUIET=True, PERMISSIVE=True)
     if pdb_path is None:
         logger.critical(
@@ -137,8 +137,8 @@ def compute_interface(interaction_distance: float = 6.0, pdb_path: str = None) -
     return result
 
 
-def compute_all_interfaces(interaction_distance: float = 6.0, dataset_list: List[str] = None) -> \
-        Union[None, Dict[str, Dict[str, List[Tuple[str, int, str, int]]]]]:
+def compute_all_interfaces(interaction_distance: float = 6.0, dataset_list: list[str] = None) -> \
+        Union[None, dict[str, dict[str, list[tuple[str, int, str, int]]]]]:
     pdb_parser = PDBParser(QUIET=True, PERMISSIVE=True)
     if dataset_list is None:
         logger.critical(
