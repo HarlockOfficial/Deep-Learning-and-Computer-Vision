@@ -8,7 +8,7 @@ import utility
 logger = utility.default_logger(__file__)
 
 
-def extract_rnn_data(dataset_file_name: str) -> List[Tuple[str, str]]:
+def extract_rnn_data(dataset_file_name: str) -> List[Tuple[str, int, str]]:
     """
         Using BioPython, reads the provided pdb input file.
         For each amino acid obtains the residue name and the related protein name.
@@ -28,13 +28,13 @@ def extract_rnn_data(dataset_file_name: str) -> List[Tuple[str, str]]:
             if residue.get_resname() == 'HOH':
                 logger.debug("skipping residue: " + str(residue))
                 continue
-            residue_name, protein_name = utility.get_residue_name_and_protein_name(residue, chain,
-                                                                                   dataset_file_name, logger)
-            out.append((protein_name, residue_name))
+            residue_name, residue_id, protein_name = utility\
+                .get_residue_name_and_protein_name(residue, chain, dataset_file_name, logger)
+            out.append((protein_name, residue_id, residue_name))
     return out
 
 
-def dump_to_file(pdb_data: List[Tuple[str, str]], output_file_path: str):
+def dump_to_file(pdb_data: List[Tuple[str, int, str]], output_file_path: str):
     """
         Dumps the provided data to the provided output file path.
 
@@ -45,7 +45,7 @@ def dump_to_file(pdb_data: List[Tuple[str, str]], output_file_path: str):
         json.dump(pdb_data, f)
 
 
-def dump_to_file_csv(pdb_data: List[Tuple[str, str]], output_file_path: str):
+def dump_to_file_csv(pdb_data: List[Tuple[str, int, str]], output_file_path: str):
     """
         Dumps the provided data to the provided output file path.
 
@@ -53,8 +53,8 @@ def dump_to_file_csv(pdb_data: List[Tuple[str, str]], output_file_path: str):
         :param output_file_path: the output file path
     """
     with open(output_file_path, 'w') as f:
-        for protein_name, residue_name in pdb_data:
-            f.write(protein_name + ',' + residue_name + '\n')
+        for protein_name, residue_id, residue_name in pdb_data:
+            f.write(protein_name + ',' + str(residue_id) + ',' + residue_name + '\n')
 
 
 if __name__ == '__main__':

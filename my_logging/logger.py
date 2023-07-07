@@ -1,4 +1,5 @@
 import logging
+import os.path
 
 
 class Logger(object):
@@ -39,9 +40,13 @@ class Logger(object):
     def critical(self, msg: str):
         self.__logger.critical(msg)
 
-    def add_file_path(self, log_level: str, debug_log_file_path: str):
+    def add_file_path(self, log_level: str, log_file_path: str):
+        if not os.path.exists(log_file_path):
+            os.makedirs(os.path.dirname(log_file_path))
+        with open(log_file_path, 'a') as f:
+            pass
         log_level = self.__parse_log_level(log_level)
-        fh = logging.FileHandler(debug_log_file_path)
+        fh = logging.FileHandler(log_file_path)
         fh.setLevel(log_level)
         fh.setFormatter(self.__formatter)
         self.__logger.addHandler(fh)

@@ -4,19 +4,19 @@ from typing import Tuple
 
 def add_default_parameters(parser: argparse.ArgumentParser):
     parser.add_argument('--debug', action='store_true', help='enable debug mode')
-    parser.add_argument('--debug_log_file_path', type=str, default='pdb_data/logs/debug.log',
+    parser.add_argument('--debug_log_file_path', type=str, default='data/logs/debug.log',
                         help='the path to the debug log file')
     parser.add_argument('--verbose', action='store_true', help='enable verbose mode')
-    parser.add_argument('--verbose_log_file_path', type=str, default='pdb_data/logs/verbose.log',
+    parser.add_argument('--verbose_log_file_path', type=str, default='data/logs/verbose.log',
                         help='the path to the verbose log file')
     parser.add_argument('--warning', action='store_true', help='enable warning mode')
-    parser.add_argument('--warning_log_file_path', type=str, default='pdb_data/logs/warning.log',
+    parser.add_argument('--warning_log_file_path', type=str, default='data/logs/warning.log',
                         help='the path to the warning log file')
     parser.add_argument('--error', action='store_true', help='enable error mode')
-    parser.add_argument('--error_log_file_path', type=str, default='pdb_data/logs/error.log',
+    parser.add_argument('--error_log_file_path', type=str, default='data/logs/error.log',
                         help='the path to the error log file')
     parser.add_argument('--critical', action='store_true', help='enable critical mode')
-    parser.add_argument('--critical_log_file_path', type=str, default='pdb_data/logs/critical.log',
+    parser.add_argument('--critical_log_file_path', type=str, default='data/logs/critical.log',
                         help='the path to the critical log file')
 
 
@@ -55,7 +55,9 @@ def get_residue_name_and_protein_name(residue, chain, dataset_file_name, logger)
     logger.debug("residue name: " + str(residue_name))
     protein_name = dataset_file_name.split('/')[-1].split('.')[0][:-1] + chain.get_id()
     logger.debug("protein name: " + str(protein_name))
-    return residue_name, protein_name
+    residue_id = residue.get_full_id()[3][1]
+    logger.debug("residue id: " + str(residue_id))
+    return residue_name, residue_id, protein_name
 
 
 def euclidean_distance(position1: Tuple[float, float, float], position2: Tuple[float, float, float]):

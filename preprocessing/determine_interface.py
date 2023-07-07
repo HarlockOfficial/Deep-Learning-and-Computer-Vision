@@ -31,7 +31,7 @@ def get_binding_partner_id(partner_pdb_id):
 
 
 def compute_interacting_interface(folder_path: str, pdb_parser: PDBParser, interaction_distance: float) \
-        -> Union[None, Dict[str, List[Tuple[str, int, str, str, bool]]]]:
+        -> Union[None, Dict[str, List[Tuple[str, int, str, bool]]]]:
     out = dict()
     if not os.path.exists(folder_path):
         logger.info(f"Folder {folder_path} does not exist!")
@@ -119,7 +119,7 @@ def dump_to_file_csv(determined_interface: Union[
 
 
 def compute_all_interfaces(interaction_distance: float = 6.0, dataset_list: List[str] = None) -> \
-        Union[None, Dict[str, Dict[str, List[Tuple[str, int, str, str, bool]]]]]:
+        Union[None, Dict[str, Dict[str, List[Tuple[str, int, str, bool]]]]]:
     pdb_parser = PDBParser(QUIET=True, PERMISSIVE=True)
     if dataset_list is None:
         logger.critical(
