@@ -1,4 +1,4 @@
-import utility
+import training.utility as utility
 from neural_network import RecurrentNetwork
 
 

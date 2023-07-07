@@ -31,7 +31,7 @@ def get_binding_partner_id(partner_pdb_id):
 
 
 def compute_interacting_interface(folder_path: str, pdb_parser: PDBParser, interaction_distance: float) \
-        -> Union[None, Dict[str, List[Tuple[str, int, str, bool]]]]:
+        -> Union[None, Dict[str, List[Tuple[str, int, str, int]]]]:
     out = dict()
     if not os.path.exists(folder_path):
         logger.info(f"Folder {folder_path} does not exist!")
@@ -45,7 +45,7 @@ def compute_interacting_interface(folder_path: str, pdb_parser: PDBParser, inter
 
 
 def dump_to_file(determined_interface: Union[
-    List[Tuple[str, int, str, bool]], Dict[str, List[Tuple[str, int, str, bool]]]],
+    List[Tuple[str, int, str, int]], Dict[str, List[Tuple[str, int, str, int]]]],
                  destination_path: str):
     """
         Dumps the determined interface to a json file.
@@ -63,7 +63,7 @@ def dump_to_file(determined_interface: Union[
 
 
 def dump_to_file_csv(determined_interface: Union[
-    List[Tuple[str, int, str, bool]], Dict[str, List[Tuple[str, int, str, bool]]]],
+    List[Tuple[str, int, str, int]], Dict[str, List[Tuple[str, int, str, int]]]],
                      destination_path: str):
     """
         Dumps the determined interface to a csv file.
@@ -107,6 +107,7 @@ def compute_interacting_interface_for_single_file(pdb_path: str, pdb_parser: PDB
     p1_interface = set()
 
     for atom in p2_heavy_atoms:
+        logger.debug(str(type(interaction_distance)) + " " + str(interaction_distance))
         nb_list = p1_tree.search(atom.coord, interaction_distance, "R")
         p1_interface = p1_interface.union(nb_list)
 
@@ -119,13 +120,13 @@ def compute_interacting_interface_for_single_file(pdb_path: str, pdb_parser: PDB
         chain_id = residue.get_full_id()[2]
         residue_id = residue.get_full_id()[3][1]
         residue_name = residue.get_resname()
-        is_interface = True if residue in p1_interface else False
+        is_interface = 1 if residue in p1_interface else 0
         out.append((chain_id, residue_id, residue_name, is_interface))
     return out
 
 
 def compute_interface(interaction_distance: float = 6.0, pdb_path: str = None) -> \
-        Union[None, List[Tuple[str, int, str, bool]]]:
+        Union[None, List[Tuple[str, int, str, int]]]:
     pdb_parser = PDBParser(QUIET=True, PERMISSIVE=True)
     if pdb_path is None:
         logger.critical(
@@ -137,7 +138,7 @@ def compute_interface(interaction_distance: float = 6.0, pdb_path: str = None) -
 
 
 def compute_all_interfaces(interaction_distance: float = 6.0, dataset_list: List[str] = None) -> \
-        Union[None, Dict[str, Dict[str, List[Tuple[str, int, str, bool]]]]]:
+        Union[None, Dict[str, Dict[str, List[Tuple[str, int, str, int]]]]]:
     pdb_parser = PDBParser(QUIET=True, PERMISSIVE=True)
     if dataset_list is None:
         logger.critical(

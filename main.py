@@ -4,7 +4,7 @@ import training.recurrent_network
 logger = utility.default_logger(__file__)
 
 
-def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float, output_path: str = None):
+def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, output_path: str = None):
     """
         This function will be used to preprocess the dataset.
         It will return the preprocessed data.
@@ -13,7 +13,7 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float, output_pat
     import preprocessing
     preprocessed_rrn_data = preprocessing.rnn_preprocessing.extract_rnn_data(pdb_path)
     if output_path is not None:
-        preprocessing.rnn_preprocessing.dump_to_file(preprocessed_rrn_data, output_path)
+        preprocessing.rnn_preprocessing.dump_to_file_csv(preprocessed_rrn_data, output_path + "/preprocessed_rnn.csv")
     expected_results = preprocessing.determine_interface\
         .compute_interface(interaction_distance=interaction_distance, pdb_path=pdb_path)
     if expected_results is None:
@@ -22,7 +22,7 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float, output_pat
 
     preprocessed_gnn_data = preprocessing.gnn_preprocessing.extract_gnn_data(pdb_path)
     if output_path is not None:
-        preprocessing.gnn_preprocessing.dump_to_file(preprocessed_gnn_data, output_path)
+        preprocessing.gnn_preprocessing.dump_to_file_csv(preprocessed_gnn_data, output_path + "/preprocessed_gnn.csv")
     distance_matrix = preprocessing.gnn_preprocessing.create_distance_matrix(preprocessed_gnn_data)
     contact_matrix = preprocessing.gnn_preprocessing.create_contact_matrix(distance_matrix)
     aminoacid_list = [x[0: 3] for x in preprocessed_gnn_data]
@@ -36,11 +36,11 @@ def preprocess_chemical_features(chemical_features_path: str, output_path: str =
     preprocessed_chemical_features = preprocessing.ffnn_preprocessing.extract_all_chemical_features(
         chemical_features_path)
     if output_path is not None:
-        preprocessing.ffnn_preprocessing.dump_to_file(preprocessed_chemical_features, output_path)
+        preprocessing.ffnn_preprocessing.dump_to_file_csv(preprocessed_chemical_features, output_path + "/preprocessed_ffnn.csv")
     return preprocessed_chemical_features
 
 
-def main(pdb_path: str, chemical_features_path: str, interaction_distance: float, output_path=None):
+def main(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, output_path=None):
     logger.info("Obtaining preprocessed data")
     preprocessed_rrn_data, expected_results, preprocessed_gnn_data = preprocessing_rnn_gnn(
         pdb_path, interaction_distance, output_path)
@@ -53,7 +53,7 @@ def main(pdb_path: str, chemical_features_path: str, interaction_distance: float
 
     logger.info("Training the RNN")
     rnn_model = training.recurrent_network.\
-        train_recurrent_network(len(preprocessed_rrn_data), preprocessed_rrn_data, expected_results)
+        train_recurrent_network(4, preprocessed_rrn_data, expected_results)
     logger.info("Training the GCN")
     gnn_model = training.graph_convolutional_network.\
         train_graph_convolutional_network(len(preprocessed_rrn_data), preprocessed_gnn_data, expected_results)
@@ -95,5 +95,5 @@ if __name__ == "__main__":
     utility.default_logging(args, logger)
 
     logger.info("Starting the program")
-    main(args.pdb_path, args.chemical_features_path, args.output)
+    main(args.pdb_path, args.chemical_features_path, args.interaction_distance, args.output)
     logger.info("Program finished")
