@@ -14,7 +14,7 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
     preprocessed_rrn_data = preprocessing.rnn_preprocessing.extract_rnn_data(pdb_path)
     if output_path is not None:
         preprocessing.rnn_preprocessing.dump_to_file_csv(preprocessed_rrn_data, output_path + "/preprocessed_rnn.csv")
-    expected_results = preprocessing.determine_interface\
+    expected_results = preprocessing.determine_interface \
         .compute_interface(interaction_distance=interaction_distance, pdb_path=pdb_path)
     if expected_results is None:
         logger.critical("Could not compute the interacting interface for the dataset.")
@@ -27,8 +27,17 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
     contact_matrix = preprocessing.gnn_preprocessing.create_contact_matrix(distance_matrix)
     aminoacid_list = [x[0: 3] for x in preprocessed_gnn_data]
     del distance_matrix
+    rnn_input_one_hot_encoding, rnn_different_protein_names_index, rnn_different_residue_names_index = utility.to_one_hot_encoding_input_for_rnn(
+        preprocessed_rrn_data)
+    output_vector_one_hot_encoding, output_different_protein_names_index, output_different_residue_names_index = utility.to_one_hot_encoding_output(
+        expected_results)
+    gcn_input_vector_one_hot_encoding, gcn_different_protein_names_index, gcn_different_residue_names_index = utility.to_one_hot_encoding_input_for_gcn(
+        aminoacid_list, contact_matrix)
 
-    return preprocessed_rrn_data, expected_results, (aminoacid_list, contact_matrix)
+    assert rnn_different_protein_names_index == output_different_protein_names_index == gcn_different_protein_names_index
+    assert rnn_different_residue_names_index == output_different_residue_names_index == gcn_different_residue_names_index
+
+    return rnn_input_one_hot_encoding, output_vector_one_hot_encoding, gcn_input_vector_one_hot_encoding, output_different_protein_names_index, output_different_residue_names_index
 
 
 def preprocess_chemical_features(chemical_features_path: str, output_path: str = None):
@@ -36,41 +45,44 @@ def preprocess_chemical_features(chemical_features_path: str, output_path: str =
     preprocessed_chemical_features = preprocessing.ffnn_preprocessing.extract_all_chemical_features(
         chemical_features_path)
     if output_path is not None:
-        preprocessing.ffnn_preprocessing.dump_to_file_csv(preprocessed_chemical_features, output_path + "/preprocessed_ffnn.csv")
+        preprocessing.ffnn_preprocessing.dump_to_file_csv(preprocessed_chemical_features,
+                                                          output_path + "/preprocessed_ffnn.csv")
     return preprocessed_chemical_features
 
 
 def main(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, output_path=None):
     logger.info("Obtaining preprocessed data")
-    preprocessed_rrn_data, expected_results, preprocessed_gnn_data = preprocessing_rnn_gnn(
+    preprocessed_rnn_data, expected_results, preprocessed_gnn_data, \
+        different_protein_names_index, different_residue_names_index = preprocessing_rnn_gnn(
         pdb_path, interaction_distance, output_path)
     logger.info("Obtaining preprocessed chemical features")
     preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)
 
     logger.info("Assuming all data have same length")
-    assert len(preprocessed_rrn_data) == len(preprocessed_gnn_data[0]) == len(preprocessed_gnn_data[1]) == len(
-        expected_results)
+    assert len(preprocessed_rnn_data) == len(preprocessed_gnn_data) == len(expected_results)
 
     logger.info("Training the RNN")
-    rnn_model = training.recurrent_network.\
-        train_recurrent_network(4, preprocessed_rrn_data, expected_results)
+    rnn_model = training.recurrent_network. \
+        train_recurrent_network(len(expected_results), preprocessed_rnn_data, expected_results)
     logger.info("Training the GCN")
-    gnn_model = training.graph_convolutional_network.\
-        train_graph_convolutional_network(len(preprocessed_rrn_data), preprocessed_gnn_data, expected_results)
+    gnn_model = training.graph_convolutional_network. \
+        train_graph_convolutional_network(len(expected_results), preprocessed_gnn_data, expected_results)
 
     logger.info("Predicting RNN results")
-    rnn_result = rnn_model.predict(preprocessed_rrn_data)
+    rnn_result = rnn_model.predict(preprocessed_rnn_data)
     logger.info("Predicting GCN results")
     gnn_result = gnn_model.predict(preprocessed_gnn_data)
 
     logger.error(f"{rnn_result}\n\n{gnn_result}\n\n{preprocessed_chemical_features}")
-    return None
 
-    input_vector = (rnn_result, gnn_result, preprocessed_chemical_features)
+    input_vector = utility.to_one_hot_encoding_input_for_ffnn(rnn_result, gnn_result, preprocessed_chemical_features,
+                                                              different_residue_names_index)
 
-    ffnn_model = training.feed_forward_network.\
-        train_feed_forward_network(len(preprocessed_rrn_data), input_vector, expected_results)
+    ffnn_model = training.feed_forward_network. \
+        train_feed_forward_network(len(expected_results), input_vector, expected_results)
     logger.info("Training finished")
+
+    return rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index
 
 
 if __name__ == "__main__":
