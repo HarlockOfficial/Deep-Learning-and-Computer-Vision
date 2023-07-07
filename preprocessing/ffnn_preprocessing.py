@@ -65,12 +65,28 @@ def extract_chemical_feature(feature_code: str) -> Dict[str, float]:
     return out
 
 
-def dump_to_file(feature_dict: Union[Dict[str, float], Dict[str, Dict[str, float]]] , output_file_path: str):
+def dump_to_file(feature_dict: Union[Dict[str, float], Dict[str, Dict[str, float]]], output_file_path: str):
     """
-        Dump the data to a file named feature_code.txt.
+        Dump the data to a file in json format.
     """
     with open(output_file_path, 'w') as f:
-        f.write(json.dumps(feature_dict))
+        json.dump(feature_dict, f)
+
+
+def dump_to_file_csv(feature_dict: Union[Dict[str, float], Dict[str, Dict[str, float]]], output_file_path: str):
+    """
+        Dump the data to a file in csv format.
+    """
+    with open(output_file_path, 'w') as f:
+        if all([isinstance(x, float) for x in feature_dict.values()]):
+            f.write('feature_code,feature_value\n')
+            for feature_code, feature_value in feature_dict.items():
+                f.write('{},{}\n'.format(feature_code, feature_value))
+        elif all([isinstance(x, dict) for x in feature_dict.values()]):
+            f.write('feature_code,feature_name,feature_value\n')
+            for feature_code, feature_dict in feature_dict.items():
+                for feature_name, feature_value in feature_dict.items():
+                    f.write('{},{},{}\n'.format(feature_code, feature_name, feature_value))
 
 
 if __name__ == '__main__':
@@ -84,6 +100,8 @@ if __name__ == '__main__':
     parser.add_argument('--feature_list_file_path', type=str,
                         help='the path to the file containing the list of feature codes')
     parser.add_argument('--chemical_feature_code', type=str, help='the chemical feature code to extract')
+    parser.add_argument('--json_path', type=str, default=None, help='the path to the json file')
+    parser.add_argument('--csv_path', type=str, default=None, help='the path to the csv file')
     utility.add_default_parameters(parser)
     parser.add_argument('--output_file_path', type=str, default=None, help='the path to the output file')
 
@@ -95,7 +113,12 @@ if __name__ == '__main__':
     elif args.chemical_feature_code is not None:
         data = extract_chemical_feature(args.chemical_feature_code)
     else:
-        raise ValueError('Either feature_list_file_path or chemical_feature_code must be specified.')
+        logger.critical('Either feature_list_file_path or chemical_feature_code must be specified.')
+        exit(1)
+    if args.json_path is not None:
+        dump_to_file(data, args.json_path)
+    if args.csv_path is not None:
+        dump_to_file_csv(data, args.csv_path)
     if args.output_file_path is None:
         print(data)
     else:

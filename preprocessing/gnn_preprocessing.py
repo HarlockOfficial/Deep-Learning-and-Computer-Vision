@@ -8,7 +8,7 @@ import utility
 logger = utility.default_logger(__file__)
 
 
-def create_distance_matrix(aminoacid_mass_center: List[Tuple[float, float, float, str, str]]) -> List[List[float]]:
+def create_distance_matrix(aminoacid_mass_center: List[Tuple[str, str, float, float, float]]) -> List[List[float]]:
     """
         Creates a distance matrix from the provided list of amino acids.
 
@@ -19,7 +19,7 @@ def create_distance_matrix(aminoacid_mass_center: List[Tuple[float, float, float
     for i in range(len(aminoacid_mass_center)):
         out.append([])
         for j in range(len(aminoacid_mass_center)):
-            out[i].append(utility.euclidean_distance(aminoacid_mass_center[i][:3], aminoacid_mass_center[j][:3]))
+            out[i].append(utility.euclidean_distance(aminoacid_mass_center[i][2:], aminoacid_mass_center[j][2:]))
     return out
 
 
@@ -38,7 +38,21 @@ def create_contact_matrix(distance_matrix: List[List[float]], threshold: float =
     return out
 
 
-def extract_gnn_data(dataset_file_name: str) -> List[Tuple[float, float, float, str, str]]:
+def dump_to_file_matrix(matrix: List[List[float]], output_file_path: str):
+    """
+        Dumps the provided data to the provided output file path.
+
+        :param matrix: the data to be dumped
+        :param output_file_path: the output file path
+    """
+    with open(output_file_path, 'w') as f:
+        for i in range(len(matrix)):
+            for j in range(len(matrix)):
+                f.write(str(matrix[i][j]) + ",")
+            f.write("\n")
+
+
+def extract_gnn_data(dataset_file_name: str) -> List[Tuple[str, str, float, float, float]]:
     """
         Using BioPython, reads the provided pdb input file.
         For each amino acid obtains the center of mass, the residue name and the related protein name.
@@ -64,12 +78,11 @@ def extract_gnn_data(dataset_file_name: str) -> List[Tuple[float, float, float, 
             logger.debug("center of mass: " + str(center_of_mass))
             residue_name, protein_name = utility.get_residue_name_and_protein_name(residue, chain,
                                                                                    dataset_file_name, logger)
-            out.append((center_of_mass[0], center_of_mass[1], center_of_mass[2],
-                        residue_name, protein_name))
+            out.append((protein_name, residue_name, center_of_mass[0], center_of_mass[1], center_of_mass[2]))
     return out
 
 
-def dump_to_file(pdb_data: List[Tuple[float, float, float, str, str]], output_file_path: str):
+def dump_to_file(pdb_data: List[Tuple[str, str, float, float, float]], output_file_path: str):
     """
         Dumps the provided data to the provided output file path.
 
@@ -80,14 +93,30 @@ def dump_to_file(pdb_data: List[Tuple[float, float, float, str, str]], output_fi
         json.dump(pdb_data, f)
 
 
+def dump_to_file_csv(pdb_data: List[Tuple[str, str, float, float, float]], output_file_path: str):
+    """
+        Dumps the provided data to the provided output file path.
+
+        :param pdb_data: the data to be dumped
+        :param output_file_path: the output file path
+    """
+    with open(output_file_path, 'w') as f:
+        for entry in pdb_data:
+            f.write(str(entry[0]) + "," + str(entry[1]) + "," + str(entry[2]) + "," + str(entry[3]) + "," + str(entry[4]) + "\n")
+
+
 if __name__ == '__main__':
     """
-    Requires as parameter the filepath of the pdb input file.
-    Prints the list of tuples obtained from the read_data function.
+        Requires as parameter the filepath of the pdb input file.
+        Prints the list of tuples obtained from the read_data function.
     """
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('pdb_file_path', type=str, help='the path to the pdb input file')
+    parser.add_argument('--csv', action='store_true', help='if set, the output will be in csv format')
+    parser.add_argument('--json', action='store_true', help='if set, the output will be in json format')
+    parser.add_argument('--csv_distance_matrix_path', type=str, default=None, help='the path to the output file')
+    parser.add_argument('--csv_contact_matrix_path', type=str, default=None, help='the path to the output file')
     utility.add_default_parameters(parser)
     parser.add_argument('--output_file_path', type=str, default=None, help='the path to the output file')
 
@@ -96,7 +125,18 @@ if __name__ == '__main__':
     utility.default_logging(args, logger)
 
     data = extract_gnn_data(args.pdb_file_path)
+    if args.csv_distance_matrix_path is not None:
+        dump_to_file_matrix(create_distance_matrix(data), args.csv_distance_matrix_path)
+    if args.csv_contact_matrix_path is not None:
+        dump_to_file_matrix(create_contact_matrix(create_distance_matrix(data)), args.csv_contact_matrix_path)
+
     if args.output_file_path is None:
         print(data)
     else:
-        dump_to_file(data, args.output_file_path)
+        if args.csv:
+            dump_to_file_csv(data, args.output_file_path)
+        elif args.json:
+            dump_to_file(data, args.output_file_path)
+        else:
+            logger.critical("no output format specified")
+            exit(1)
