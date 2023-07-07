@@ -20,6 +20,8 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
         logger.critical("Could not compute the interacting interface for the dataset.")
         exit(1)
 
+    logger.debug(str(expected_results))
+
     preprocessed_gnn_data = preprocessing.gnn_preprocessing.extract_gnn_data(pdb_path)
     if output_path is not None:
         preprocessing.gnn_preprocessing.dump_to_file_csv(preprocessed_gnn_data, output_path + "/preprocessed_gnn.csv")
@@ -34,8 +36,15 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
     gcn_input_vector_one_hot_encoding, gcn_different_protein_names_index, gcn_different_residue_names_index = utility.to_one_hot_encoding_input_for_gcn(
         aminoacid_list, contact_matrix)
 
-    assert rnn_different_protein_names_index == output_different_protein_names_index == gcn_different_protein_names_index
-    assert rnn_different_residue_names_index == output_different_residue_names_index == gcn_different_residue_names_index
+    assert len(rnn_different_protein_names_index) == len(output_different_protein_names_index) == len(gcn_different_protein_names_index)
+    assert len(rnn_different_residue_names_index) == len(output_different_residue_names_index) == len(gcn_different_residue_names_index)
+
+    for key in rnn_different_protein_names_index.keys():
+        for key2 in output_different_protein_names_index.keys():
+            for key3 in gcn_different_protein_names_index.keys():
+                assert rnn_different_protein_names_index[key] == output_different_protein_names_index[key] == gcn_different_protein_names_index[key]
+                assert rnn_different_protein_names_index[key2] == output_different_protein_names_index[key2] == gcn_different_protein_names_index[key2]
+                assert rnn_different_protein_names_index[key3] == output_different_protein_names_index[key3] == gcn_different_protein_names_index[key3]
 
     return rnn_input_one_hot_encoding, output_vector_one_hot_encoding, gcn_input_vector_one_hot_encoding, output_different_protein_names_index, output_different_residue_names_index
 
@@ -59,6 +68,8 @@ def main(pdb_path: str, chemical_features_path: str, interaction_distance: float
     preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)
 
     logger.info("Assuming all data have same length")
+    logger.debug(len(expected_results))
+    logger.debug(str(expected_results))
     assert len(preprocessed_rnn_data) == len(preprocessed_gnn_data) == len(expected_results)
 
     logger.info("Training the RNN")

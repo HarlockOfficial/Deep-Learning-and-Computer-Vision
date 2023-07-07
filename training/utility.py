@@ -8,12 +8,6 @@ def train_network(model: type[tf.keras.models.Model], n_output_labels, x_train, 
     if os.path.exists('data/models/graph_convolutional_network/weights.h5'):
         model.load_weights('data/models/graph_convolutional_network/weights.h5')
     model.compile(optimizer='adam', loss='mse', metrics=['mae'])
-    dt = np.dtype('str,int,str')
-    x_train = np.array(x_train, dtype=dt)
-
-    dt2 = np.dtype('str,int,str,int')
-    y_train = np.array(y_train, dtype=dt2)
-
     model.fit(x_train, y_train, epochs=100, batch_size=64, use_multiprocessing=True, verbose=1)
     if not os.path.exists('data/models/graph_convolutional_network'):
         os.makedirs('data/models/graph_convolutional_network')

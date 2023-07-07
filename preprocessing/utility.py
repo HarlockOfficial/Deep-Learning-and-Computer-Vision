@@ -51,7 +51,8 @@ def default_logger(file):
 def get_residue_name_and_protein_name(residue, chain, dataset_file_name, logger):
     residue_name = residue.get_resname()
     logger.debug("residue name: " + str(residue_name))
-    protein_name = dataset_file_name.split('/')[-1].split('.')[0][:-1] + chain.get_id()
+    #protein_name = datset_file_name.split('/')[-1].split('.')[0][:-1] + chain.get_id()
+    protein_name = chain.get_id()
     logger.debug("protein name: " + str(protein_name))
     residue_id = residue.get_full_id()[3][1]
     logger.debug("residue id: " + str(residue_id))
