@@ -1,6 +1,6 @@
 import preprocessing.utility as utility
 import training.recurrent_network
-
+import tensorflow as tf
 logger = utility.default_logger(__file__)
 
 
@@ -73,11 +73,18 @@ def main(pdb_path: str, chemical_features_path: str, interaction_distance: float
     assert len(preprocessed_rnn_data) == len(preprocessed_gnn_data) == len(expected_results)
 
     logger.info("Training the RNN")
+
+    tensor_pre_array = tf.convert_to_tensor(preprocessed_rnn_data)
+    tensor_exp_array = tf.convert_to_tensor(expected_results)
+
+    preprocessed_rnn_data_reshaped = tf.reshape(tensor_pre_array, (len(tensor_pre_array[0]), len(tensor_pre_array)))
+    expected_rnn_data_reshaped = tf.reshape(tensor_exp_array, (len(tensor_exp_array[0]), len(tensor_exp_array)))
+
     rnn_model = training.recurrent_network. \
-        train_recurrent_network(len(expected_results), preprocessed_rnn_data, expected_results)
+        train_recurrent_network(len(expected_results), preprocessed_rnn_data_reshaped, expected_rnn_data_reshaped)
     logger.info("Training the GCN")
     gnn_model = training.graph_convolutional_network. \
-        train_graph_convolutional_network(len(expected_results), preprocessed_gnn_data, expected_results)
+        train_graph_convolutional_network(preprocessed_gnn_data, expected_results)
 
     logger.info("Predicting RNN results")
     rnn_result = rnn_model.predict(preprocessed_rnn_data)

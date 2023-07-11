@@ -4,6 +4,7 @@ import tensorflow as tf
 
 
 def train_network(model: type[tf.keras.models.Model], model_name: str, n_output_labels, x_train, y_train):
+    # TODO (?) aggiungere parametro n_input_features altrimenti è sempre 2
     m = model(n_label=n_output_labels, activation='relu', output_activation='linear', use_bias=True)
     if os.path.exists(f'data/models/{model_name}/weights.h5'):
         m.load_weights(f'data/models/{model_name}/weights.h5')
