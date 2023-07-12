@@ -3,7 +3,7 @@ import tensorflow as tf
 
 
 class GraphAttentionNetwork(tf.keras.models.Model):
-    def __init__(self, n_label=1, activation='relu', output_activation='linear', use_bias=True):
+    def __init__(self, n_label=1, activation='relu', output_activation='linear', use_bias=True, **kwargs):
         super(GraphAttentionNetwork, self).__init__()
         self.__layers = []
         for i in range(4):

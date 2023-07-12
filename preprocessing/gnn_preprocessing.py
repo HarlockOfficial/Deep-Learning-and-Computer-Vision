@@ -3,6 +3,7 @@ import json
 from Bio.PDB import PDBParser
 
 import utility
+import tensorflow as tf
 
 logger = utility.default_logger(__file__)
 
@@ -22,18 +23,17 @@ def create_distance_matrix(aminoacid_mass_center: list[tuple[str, int, str, floa
     return out
 
 
-def create_contact_matrix(distance_matrix: list[list[tuple[str, int, str, str, int, str, float]]], threshold: float = 12) -> list[list[int]]:
+def create_contact_matrix(distance_matrix: list[list[tuple[str, int, str, str, int, str, float]]], threshold: float = 12) -> tf.Tensor:
     """
         Creates a contact matrix from the provided distance matrix.
     """
-    out = []
+    out = tf.zeros(shape=(len(distance_matrix), len(distance_matrix)))
     for i in range(len(distance_matrix)):
-        out.append([])
         for j in range(len(distance_matrix)):
             if distance_matrix[i][j][-1] <= threshold:
-                out[i].append(1)
+                tf.add(out[i][j], 1)
             else:
-                out[i].append(0)
+                tf.add(out[i][j], 0)
     return out
 
 

@@ -121,12 +121,12 @@ def compute_interacting_interface_for_single_file(pdb_path: str, pdb_parser: PDB
         residue_id = residue.get_full_id()[3][1]
         residue_name = residue.get_resname()
         is_interface = 1 if residue in p1_interface else 0
-        out.append((chain_id, residue_id, residue_name, is_interface))
+        out.append(is_interface)
     return out
 
 
 def compute_interface(interaction_distance: float = 6.0, pdb_path: str = None) -> \
-        Union[None, list[tuple[str, int, str, int]]]:
+        Union[None, list[int]]:
     pdb_parser = PDBParser(QUIET=True, PERMISSIVE=True)
     if pdb_path is None:
         logger.critical(

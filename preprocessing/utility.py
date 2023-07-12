@@ -1,4 +1,8 @@
 import argparse
+from typing import Tuple, List, Union, Dict, Any
+import tensorflow as tf
+from tensorflow import Tensor
+
 
 def add_default_parameters(parser: argparse.ArgumentParser):
     parser.add_argument('--debug', action='store_true', help='enable debug mode')
@@ -93,24 +97,12 @@ def to_one_hot_encoding_input_for_rnn(rnn_input: list[tuple[str, int, str]]) -> 
     return rnn_input_one_hot_encoding, different_protein_names_index, different_residue_names_index
 
 
-def to_one_hot_encoding_output(output_vector: list[tuple[str, int, str, int]]) -> tuple[list[list[int]], dict[str, int], dict[str, int]]:
-    # process output
-    trimmed_output_vector = list([(x, y, z) for x, y, z, _ in output_vector])
-    output_vector_one_hot_encoding, different_protein_names_index, different_residue_names_index = \
-        to_one_hot_encoding_input_for_rnn(trimmed_output_vector)
-
-    for index, (protein_name, residue_id, residue_name, is_contact) in enumerate(output_vector):
-        output_vector_one_hot_encoding[index].append(is_contact)
-
-    return output_vector_one_hot_encoding, different_protein_names_index, different_residue_names_index
-
-
-def to_one_hot_encoding_input_for_gcn(aminoacid_list: list[tuple[str, int, str]], contact_matrix: list[list[int]]) -> tuple[list[list[int]], dict[str, int], dict[str, int]]:
+def to_one_hot_encoding_input_for_gcn(aminoacid_list: list[tuple[str, int, str]]) -> \
+        tuple[Any, dict[str, int], dict[str, int]]:
     gcn_input_vector_one_hot_encoding, different_protein_names_index, different_residue_names_index = \
         to_one_hot_encoding_input_for_rnn(aminoacid_list)
-    for index, element in enumerate(aminoacid_list):
-        gcn_input_vector_one_hot_encoding[index].extend(contact_matrix[index])
-    return gcn_input_vector_one_hot_encoding, different_protein_names_index, different_residue_names_index
+    return tf.convert_to_tensor(value=gcn_input_vector_one_hot_encoding, dtype=tf.float32), different_protein_names_index, \
+           different_residue_names_index
 
 
 def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: list[list[int]],

@@ -31,22 +31,10 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
     del distance_matrix
     rnn_input_one_hot_encoding, rnn_different_protein_names_index, rnn_different_residue_names_index = utility.to_one_hot_encoding_input_for_rnn(
         preprocessed_rrn_data)
-    output_vector_one_hot_encoding, output_different_protein_names_index, output_different_residue_names_index = utility.to_one_hot_encoding_output(
-        expected_results)
     gcn_input_vector_one_hot_encoding, gcn_different_protein_names_index, gcn_different_residue_names_index = utility.to_one_hot_encoding_input_for_gcn(
-        aminoacid_list, contact_matrix)
+        aminoacid_list)
 
-    assert len(rnn_different_protein_names_index) == len(output_different_protein_names_index) == len(gcn_different_protein_names_index)
-    assert len(rnn_different_residue_names_index) == len(output_different_residue_names_index) == len(gcn_different_residue_names_index)
-
-    for key in rnn_different_protein_names_index.keys():
-        for key2 in output_different_protein_names_index.keys():
-            for key3 in gcn_different_protein_names_index.keys():
-                assert rnn_different_protein_names_index[key] == output_different_protein_names_index[key] == gcn_different_protein_names_index[key]
-                assert rnn_different_protein_names_index[key2] == output_different_protein_names_index[key2] == gcn_different_protein_names_index[key2]
-                assert rnn_different_protein_names_index[key3] == output_different_protein_names_index[key3] == gcn_different_protein_names_index[key3]
-
-    return rnn_input_one_hot_encoding, output_vector_one_hot_encoding, gcn_input_vector_one_hot_encoding, output_different_protein_names_index, output_different_residue_names_index
+    return rnn_input_one_hot_encoding, expected_results, gcn_input_vector_one_hot_encoding, contact_matrix, rnn_different_protein_names_index, rnn_different_residue_names_index
 
 
 def preprocess_chemical_features(chemical_features_path: str, output_path: str = None):
@@ -61,7 +49,7 @@ def preprocess_chemical_features(chemical_features_path: str, output_path: str =
 
 def main(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, output_path=None):
     logger.info("Obtaining preprocessed data")
-    preprocessed_rnn_data, expected_results, preprocessed_gnn_data, \
+    preprocessed_rnn_data, expected_results, preprocessed_gnn_data, contact_matrix, \
         different_protein_names_index, different_residue_names_index = preprocessing_rnn_gnn(
         pdb_path, interaction_distance, output_path)
     logger.info("Obtaining preprocessed chemical features")
@@ -77,14 +65,12 @@ def main(pdb_path: str, chemical_features_path: str, interaction_distance: float
     tensor_pre_array = tf.convert_to_tensor(preprocessed_rnn_data)
     tensor_exp_array = tf.convert_to_tensor(expected_results)
 
-    preprocessed_rnn_data_reshaped = tf.reshape(tensor_pre_array, (len(tensor_pre_array[0]), len(tensor_pre_array)))
-    expected_rnn_data_reshaped = tf.reshape(tensor_exp_array, (len(tensor_exp_array[0]), len(tensor_exp_array)))
-
     rnn_model = training.recurrent_network. \
-        train_recurrent_network(len(expected_results), preprocessed_rnn_data_reshaped, expected_rnn_data_reshaped)
+        train_recurrent_network(len(expected_results), tensor_pre_array, tensor_exp_array)
     logger.info("Training the GCN")
+    print(tf.shape(tf.convert_to_tensor(value=expected_results, dtype=tf.float32)))
     gnn_model = training.graph_convolutional_network. \
-        train_graph_convolutional_network(preprocessed_gnn_data, expected_results)
+        train_graph_convolutional_network(len(expected_results), (preprocessed_gnn_data, contact_matrix), tf.convert_to_tensor(value=expected_results, dtype=tf.float32))
 
     logger.info("Predicting RNN results")
     rnn_result = rnn_model.predict(preprocessed_rnn_data)
