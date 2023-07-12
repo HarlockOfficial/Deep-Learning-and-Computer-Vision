@@ -34,7 +34,11 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
     gcn_input_vector_one_hot_encoding, gcn_different_protein_names_index, gcn_different_residue_names_index = utility.to_one_hot_encoding_input_for_gcn(
         aminoacid_list)
 
-    return rnn_input_one_hot_encoding, expected_results, gcn_input_vector_one_hot_encoding, contact_matrix, rnn_different_protein_names_index, rnn_different_residue_names_index
+    import neural_network.utility.gcn_dataset as gcn_dataset
+    import numpy as np
+
+    dataset = gcn_dataset.MyDataset(gcn_input_vector_one_hot_encoding.numpy(), contact_matrix.numpy(), np.array(expected_results))
+    return rnn_input_one_hot_encoding, expected_results, gcn_input_vector_one_hot_encoding, contact_matrix, rnn_different_protein_names_index, rnn_different_residue_names_index, dataset
 
 
 def preprocess_chemical_features(chemical_features_path: str, output_path: str = None):
@@ -50,7 +54,7 @@ def preprocess_chemical_features(chemical_features_path: str, output_path: str =
 def main(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, output_path=None):
     logger.info("Obtaining preprocessed data")
     preprocessed_rnn_data, expected_results, preprocessed_gnn_data, contact_matrix, \
-        different_protein_names_index, different_residue_names_index = preprocessing_rnn_gnn(
+        different_protein_names_index, different_residue_names_index, dataset = preprocessing_rnn_gnn(
         pdb_path, interaction_distance, output_path)
     logger.info("Obtaining preprocessed chemical features")
     preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)
@@ -70,7 +74,7 @@ def main(pdb_path: str, chemical_features_path: str, interaction_distance: float
     logger.info("Training the GCN")
     print(tf.shape(tf.convert_to_tensor(value=expected_results, dtype=tf.float32)))
     gnn_model = training.graph_convolutional_network. \
-        train_graph_convolutional_network(len(expected_results), (preprocessed_gnn_data, contact_matrix), tf.convert_to_tensor(value=expected_results, dtype=tf.float32))
+        train_graph_convolutional_network(len(expected_results), dataset)
 
     logger.info("Predicting RNN results")
     rnn_result = rnn_model.predict(preprocessed_rnn_data)

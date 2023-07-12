@@ -27,13 +27,19 @@ def create_contact_matrix(distance_matrix: list[list[tuple[str, int, str, str, i
     """
         Creates a contact matrix from the provided distance matrix.
     """
-    out = tf.zeros(shape=(len(distance_matrix), len(distance_matrix)))
+
+    outer = []
+
     for i in range(len(distance_matrix)):
+        outer.append([])
         for j in range(len(distance_matrix)):
             if distance_matrix[i][j][-1] <= threshold:
-                tf.add(out[i][j], 1)
+                outer[i].append(1)
             else:
-                tf.add(out[i][j], 0)
+                outer[i].append(0)
+
+    out = tf.constant(value=outer, shape=(len(distance_matrix), len(distance_matrix)), dtype=tf.int32)
+    #sparse = tf.sparse.from_dense(out)
     return out
 
 
