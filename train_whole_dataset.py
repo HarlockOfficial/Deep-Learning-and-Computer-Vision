@@ -16,12 +16,14 @@ def train(pdb_folder_path: str, chemical_features_path: str, interaction_distanc
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
+    preprocessed_chemical_features = None
+
     for pdb_file in os.listdir(pdb_folder_path):
         if pdb_file.endswith(".pdb"):
             pdb_path = pdb_folder_path + "/" + pdb_file
             logger.info("Training for file: " + pdb_path)
             rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, \
-            aminoacid_list = main.main(pdb_path, chemical_features_path, interaction_distance, output_path)
+            aminoacid_list, preprocessed_chemical_features = main.main(pdb_path, chemical_features_path, interaction_distance, preprocessed_chemical_features, output_path)
             logger.info("Training for file: " + pdb_path + " finished")
 
 

@@ -53,13 +53,16 @@ def preprocess_chemical_features(chemical_features_path: str, output_path: str =
     return preprocessed_chemical_features
 
 
-def main(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, output_path=None):
+def main(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, chemical_features=None, output_path=None):
     logger.info("Obtaining preprocessed data")
     preprocessed_rnn_data, expected_results, preprocessed_gnn_data, contact_matrix, \
         different_protein_names_index, different_residue_names_index, dataset, aminoacid_list = preprocessing_rnn_gnn(
         pdb_path, interaction_distance, output_path)
     logger.info("Obtaining preprocessed chemical features")
-    preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)
+    if chemical_features is None:
+        preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)
+    else:
+        preprocessed_chemical_features = chemical_features
 
     logger.info("Assuming all data have same length")
     logger.debug(len(expected_results))
@@ -78,12 +81,12 @@ def main(pdb_path: str, chemical_features_path: str, interaction_distance: float
         train_graph_convolutional_network(len(expected_results), dataset)
 
     logger.info("Predicting RNN results")
-    rnn_result = rnn_model.predict(preprocessed_rnn_data, batch_size=232)
+    rnn_result = rnn_model.predict(preprocessed_rnn_data, batch_size=len(preprocessed_rnn_data))
     logger.info("Predicting GCN results")
     logger.debug(rnn_result)
     logger.debug(preprocessed_gnn_data)
     logger.debug(contact_matrix)
-    gnn_result = gnn_model.predict(x=[preprocessed_gnn_data.numpy(), contact_matrix.numpy()], batch_size=232)
+    gnn_result = gnn_model.predict(x=[preprocessed_gnn_data.numpy(), contact_matrix.numpy()], batch_size=len(preprocessed_gnn_data))
 
     logger.debug(f"{rnn_result}\n\n{gnn_result}\n\n{preprocessed_chemical_features}")
 
@@ -94,7 +97,7 @@ def main(pdb_path: str, chemical_features_path: str, interaction_distance: float
         train_feed_forward_network(len(expected_results), input_vector, expected_results)
     logger.info("Training finished")
 
-    return rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list
+    return rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list, preprocessed_chemical_features
 
 
 if __name__ == "__main__":
@@ -119,8 +122,8 @@ if __name__ == "__main__":
     utility.default_logging(args, logger)
 
     logger.info("Starting the program")
-    rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list = \
-        main(args.pdb_path, args.chemical_features_path, args.interaction_distance, args.output)
+    rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list, \
+    preprocess_chemical_features = main(args.pdb_path, args.chemical_features_path, args.interaction_distance, args.output)
     logger.info("Trained RNN, with configs:\n" + str(rnn_model.get_config()))
     logger.info("Trained GCNN, with configs:\n" + str(gnn_model.get_config()))
     logger.info("Trained FFNN, with configs:\n" + str(ffnn_model.get_config()))
