@@ -1,7 +1,6 @@
 import argparse
-from typing import Tuple, List, Union, Dict, Any
+from typing import Any
 import tensorflow as tf
-from tensorflow import Tensor
 
 
 def add_default_parameters(parser: argparse.ArgumentParser):
@@ -55,7 +54,6 @@ def default_logger(file):
 def get_residue_name_and_protein_name(residue, chain, dataset_file_name, logger):
     residue_name = residue.get_resname()
     logger.debug("residue name: " + str(residue_name))
-    #protein_name = datset_file_name.split('/')[-1].split('.')[0][:-1] + chain.get_id()
     protein_name = chain.get_id()
     logger.debug("protein name: " + str(protein_name))
     residue_id = residue.get_full_id()[3][1]
@@ -107,7 +105,7 @@ def to_one_hot_encoding_input_for_gcn(aminoacid_list: list[tuple[str, int, str]]
 
 def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: list[list[int]],
                                        preprocessed_chemical_features: dict[str, dict[str, float]],
-                                       different_residue_names_index: dict[str, int]) ->\
+                                       aminoacid_list: list[tuple[str, int, str]]) ->\
         list[list[float]]:
     ffnn_input_vector_one_hot_encoding = []
     for element_list in rnn_result:
@@ -116,20 +114,11 @@ def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: 
     for index, element in enumerate(rnn_result):
         ffnn_input_vector_one_hot_encoding[index].extend([float(x) for x in gnn_result[index]])
 
-    one_hot_encoded_aminoacid_list = []
-    for element in rnn_result:
-        one_hot_encoded_aminoacid_list.append(element[:len(different_residue_names_index.keys())])
-    aminoacid_name_list = []
-    for aminoacid_list in one_hot_encoded_aminoacid_list:
-        index = aminoacid_list.index(1)
-        for key in different_residue_names_index.keys():
-            if different_residue_names_index[key] == index:
-                aminoacid_name_list.append(key)
-                break
-
-    for index, element in enumerate(ffnn_input_vector_one_hot_encoding):
-        for chemical_feature in preprocessed_chemical_features.keys():
-            ffnn_input_vector_one_hot_encoding[index].append(
-                preprocessed_chemical_features[chemical_feature][aminoacid_name_list[index]])
+    for index, element in enumerate(aminoacid_list):
+        aminoacid_name = element[2]
+        aminoacid_features = preprocessed_chemical_features.values()
+        for feature_dict in aminoacid_features:
+            feature_value = feature_dict[aminoacid_name]
+            ffnn_input_vector_one_hot_encoding[index].append(feature_value)
 
     return ffnn_input_vector_one_hot_encoding

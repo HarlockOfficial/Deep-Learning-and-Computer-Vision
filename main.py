@@ -1,3 +1,5 @@
+from spektral.data import Graph
+
 import preprocessing.utility as utility
 import training.recurrent_network
 import tensorflow as tf
@@ -38,7 +40,7 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
     import numpy as np
 
     dataset = gcn_dataset.MyDataset(gcn_input_vector_one_hot_encoding.numpy(), contact_matrix.numpy(), np.array(expected_results))
-    return rnn_input_one_hot_encoding, expected_results, gcn_input_vector_one_hot_encoding, contact_matrix, rnn_different_protein_names_index, rnn_different_residue_names_index, dataset
+    return rnn_input_one_hot_encoding, expected_results, gcn_input_vector_one_hot_encoding, contact_matrix, rnn_different_protein_names_index, rnn_different_residue_names_index, dataset, aminoacid_list
 
 
 def preprocess_chemical_features(chemical_features_path: str, output_path: str = None):
@@ -54,7 +56,7 @@ def preprocess_chemical_features(chemical_features_path: str, output_path: str =
 def main(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, output_path=None):
     logger.info("Obtaining preprocessed data")
     preprocessed_rnn_data, expected_results, preprocessed_gnn_data, contact_matrix, \
-        different_protein_names_index, different_residue_names_index, dataset = preprocessing_rnn_gnn(
+        different_protein_names_index, different_residue_names_index, dataset, aminoacid_list = preprocessing_rnn_gnn(
         pdb_path, interaction_distance, output_path)
     logger.info("Obtaining preprocessed chemical features")
     preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)
@@ -72,25 +74,27 @@ def main(pdb_path: str, chemical_features_path: str, interaction_distance: float
     rnn_model = training.recurrent_network. \
         train_recurrent_network(len(expected_results), tensor_pre_array, tensor_exp_array)
     logger.info("Training the GCN")
-    print(tf.shape(tf.convert_to_tensor(value=expected_results, dtype=tf.float32)))
     gnn_model = training.graph_convolutional_network. \
         train_graph_convolutional_network(len(expected_results), dataset)
 
     logger.info("Predicting RNN results")
-    rnn_result = rnn_model.predict(preprocessed_rnn_data)
+    rnn_result = rnn_model.predict(preprocessed_rnn_data, batch_size=232)
     logger.info("Predicting GCN results")
-    gnn_result = gnn_model.predict(preprocessed_gnn_data)
+    logger.debug(rnn_result)
+    logger.debug(preprocessed_gnn_data)
+    logger.debug(contact_matrix)
+    gnn_result = gnn_model.predict(x=[preprocessed_gnn_data.numpy(), contact_matrix.numpy()], batch_size=232)
 
-    logger.error(f"{rnn_result}\n\n{gnn_result}\n\n{preprocessed_chemical_features}")
+    logger.debug(f"{rnn_result}\n\n{gnn_result}\n\n{preprocessed_chemical_features}")
 
-    input_vector = utility.to_one_hot_encoding_input_for_ffnn(rnn_result, gnn_result, preprocessed_chemical_features,
-                                                              different_residue_names_index)
+    input_vector = utility.to_one_hot_encoding_input_for_ffnn(rnn_result, gnn_result, preprocessed_chemical_features, aminoacid_list)
 
+    logger.info("Training the FFN")
     ffnn_model = training.feed_forward_network. \
         train_feed_forward_network(len(expected_results), input_vector, expected_results)
     logger.info("Training finished")
 
-    return rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index
+    return rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list
 
 
 if __name__ == "__main__":
@@ -115,5 +119,9 @@ if __name__ == "__main__":
     utility.default_logging(args, logger)
 
     logger.info("Starting the program")
-    main(args.pdb_path, args.chemical_features_path, args.interaction_distance, args.output)
+    rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list = \
+        main(args.pdb_path, args.chemical_features_path, args.interaction_distance, args.output)
+    logger.info("Trained RNN, with configs:\n" + str(rnn_model.get_config()))
+    logger.info("Trained GCNN, with configs:\n" + str(gnn_model.get_config()))
+    logger.info("Trained FFNN, with configs:\n" + str(ffnn_model.get_config()))
     logger.info("Program finished")
