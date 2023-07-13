@@ -3,12 +3,12 @@ import os.path
 
 
 class Logger(object):
-    instance: 'Logger' = None
+    __instance: 'Logger' = None
 
     def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, 'instance') or cls.instance is None:
-            cls.instance = super(Logger, cls).__new__(cls)
-        return cls.instance
+        if not hasattr(cls, '__instance') or cls.__instance is None:
+            cls.__instance = super(Logger, cls).__new__(cls)
+        return cls.__instance
 
     def __init__(self, min_level=logging.INFO, log_file_path=None):
         logger = logging.getLogger('my_logging')
@@ -70,3 +70,5 @@ class Logger(object):
         else:
             raise ValueError('Invalid log level: ' + log_level)
         return log_level
+
+logger_instance = Logger()

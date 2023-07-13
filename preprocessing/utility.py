@@ -46,9 +46,9 @@ def default_logger(file):
     if os.path.dirname(os.path.dirname(os.path.abspath(file))) not in sys.path:
         sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(file))))
 
-    from my_logging import Logger
+    from my_logging import logger_instance
 
-    return Logger()
+    return logger_instance
 
 
 def get_residue_name_and_protein_name(residue, chain, dataset_file_name, logger):
