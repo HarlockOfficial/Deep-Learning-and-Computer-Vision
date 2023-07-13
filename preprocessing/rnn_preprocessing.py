@@ -6,6 +6,8 @@ import utility
 
 logger = utility.default_logger(__file__)
 
+def is_hetero(res):
+    return res.get_full_id()[3][0] != ' '
 
 def extract_rnn_data(dataset_file_name: str) -> list[tuple[str, int, str]]:
     """
@@ -21,8 +23,12 @@ def extract_rnn_data(dataset_file_name: str) -> list[tuple[str, int, str]]:
     p = PDBParser(PERMISSIVE=True)
     structure = p.get_structure('protein', dataset_file_name)
     out = []
+
     for chain in structure.get_chains():
         for residue in chain:
+            if is_hetero(residue):
+                logger.debug("skipping residue couse it's heteroatm: " + str(residue))
+                continue
             logger.debug("processing residue: " + str(residue))
             if residue.get_resname() == 'HOH':
                 logger.debug("skipping residue: " + str(residue))

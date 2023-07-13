@@ -8,6 +8,10 @@ import tensorflow as tf
 logger = utility.default_logger(__file__)
 
 
+def is_hetero(res):
+    return res.get_full_id()[3][0] != ' '
+
+
 def create_distance_matrix(aminoacid_mass_center: list[tuple[str, int, str, float, float, float]]) -> list[list[tuple[str, int, str, str, int, str, float]]]:
     """
         Creates a distance matrix from the provided list of amino acids.
@@ -72,10 +76,14 @@ def extract_gnn_data(dataset_file_name: str) -> list[tuple[str, int, str, float,
     p = PDBParser(PERMISSIVE=True)
     structure = p.get_structure('protein', dataset_file_name)
     out = []
+
     for chain in structure.get_chains():
         logger.debug("processing chain: " + str(chain))
         for residue in chain:
             logger.debug("processing residue: " + str(residue))
+            if is_hetero(residue):
+                logger.debug("skipping residue couse it's heteroatm: " + str(residue))
+                continue
             if residue.get_resname() == 'HOH':
                 logger.debug("skipping residue: " + str(residue))
                 continue
