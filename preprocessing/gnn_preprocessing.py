@@ -79,7 +79,7 @@ def extract_gnn_data(dataset_file_name: str) -> list[tuple[str, int, str, float,
             if residue.get_resname() == 'HOH':
                 logger.debug("skipping residue: " + str(residue))
                 continue
-            center_of_mass = residue['CA'].get_coord()
+            center_of_mass = residue.center_of_mass()
             logger.debug("center of mass: " + str(center_of_mass))
             residue_name, residue_id, protein_name = utility.get_residue_name_and_protein_name(residue, chain,
                                                                                    dataset_file_name, logger)
