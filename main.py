@@ -1,8 +1,8 @@
-from spektral.data import Graph
+import tensorflow as tf
 
 import preprocessing.utility as utility
 import training.recurrent_network
-import tensorflow as tf
+
 logger = utility.default_logger(__file__)
 
 

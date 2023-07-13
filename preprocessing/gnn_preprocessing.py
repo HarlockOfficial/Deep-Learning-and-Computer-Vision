@@ -84,6 +84,10 @@ def extract_gnn_data(dataset_file_name: str) -> list[tuple[str, int, str, float,
             residue_name, residue_id, protein_name = utility.get_residue_name_and_protein_name(residue, chain,
                                                                                    dataset_file_name, logger)
             out.append((protein_name, residue_id, residue_name, center_of_mass[0], center_of_mass[1], center_of_mass[2]))
+
+    for index, (protein_name, _, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z) in enumerate(out):
+        out[index] = (protein_name, index, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z)
+
     return out
 
 

@@ -30,6 +30,10 @@ def extract_rnn_data(dataset_file_name: str) -> list[tuple[str, int, str]]:
             residue_name, residue_id, protein_name = utility\
                 .get_residue_name_and_protein_name(residue, chain, dataset_file_name, logger)
             out.append((protein_name, residue_id, residue_name))
+
+    for index, (protein_name, _, residue_name) in enumerate(out):
+        out[index] = (protein_name, index , residue_name)
+
     return out
 
 
