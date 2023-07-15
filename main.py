@@ -6,7 +6,7 @@ import training.recurrent_network
 logger = utility.default_logger(__file__)
 
 
-def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, output_path: str = None):
+def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, output_path: str = None, different_protein_names_index = None, different_residue_names_index = None):
     """
         This function will be used to preprocess the dataset.
         It will return the preprocessed data.
@@ -31,16 +31,16 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
     contact_matrix = preprocessing.gnn_preprocessing.create_contact_matrix(distance_matrix)
     aminoacid_list = [x[0: 3] for x in preprocessed_gnn_data]
     del distance_matrix
-    rnn_input_one_hot_encoding, rnn_different_protein_names_index, rnn_different_residue_names_index = utility.to_one_hot_encoding_input_for_rnn(
-        preprocessed_rrn_data)
-    gcn_input_vector_one_hot_encoding, gcn_different_protein_names_index, gcn_different_residue_names_index = utility.to_one_hot_encoding_input_for_gcn(
-        aminoacid_list)
+    rnn_input_one_hot_encoding, different_protein_names_index, different_residue_names_index = utility.to_one_hot_encoding_input_for_rnn(
+        preprocessed_rrn_data, different_protein_names_index, different_residue_names_index)
+    gcn_input_vector_one_hot_encoding, different_protein_names_index, different_residue_names_index = utility.to_one_hot_encoding_input_for_gcn(
+        aminoacid_list, different_protein_names_index, different_residue_names_index)
 
     import neural_network.utility.gcn_dataset as gcn_dataset
     import numpy as np
 
     dataset = gcn_dataset.MyDataset(gcn_input_vector_one_hot_encoding.numpy(), contact_matrix.numpy(), np.array(expected_results))
-    return rnn_input_one_hot_encoding, expected_results, gcn_input_vector_one_hot_encoding, contact_matrix, rnn_different_protein_names_index, rnn_different_residue_names_index, dataset, aminoacid_list
+    return rnn_input_one_hot_encoding, expected_results, gcn_input_vector_one_hot_encoding, contact_matrix, different_protein_names_index, different_residue_names_index, dataset, aminoacid_list
 
 
 def preprocess_chemical_features(chemical_features_path: str, output_path: str = None):
@@ -53,11 +53,13 @@ def preprocess_chemical_features(chemical_features_path: str, output_path: str =
     return preprocessed_chemical_features
 
 
-def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, chemical_features=None, output_path=None):
+def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, chemical_features=None, output_path=None, different_protein_names_index=None, different_residue_names_index=None):
     logger.info("Obtaining preprocessed data")
     preprocessed_rnn_data, expected_results, preprocessed_gnn_data, contact_matrix, \
         different_protein_names_index, different_residue_names_index, dataset, aminoacid_list = preprocessing_rnn_gnn(
-        pdb_path, interaction_distance, output_path)
+        pdb_path, interaction_distance, output_path, different_protein_names_index, different_residue_names_index)
+    logger.info("Preprocessed RNN data length " + str(len(preprocessed_rnn_data[0])))
+    logger.info("Preprocessed GNN data length " + str(len(preprocessed_gnn_data[0])))
     logger.info("Obtaining preprocessed chemical features")
     if chemical_features is None:
         preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)
@@ -93,6 +95,7 @@ def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, in
     input_vector = utility.to_one_hot_encoding_input_for_ffnn(rnn_result, gnn_result, preprocessed_chemical_features, aminoacid_list)
 
     logger.info("Training the FFN")
+    logger.info("Preprocessed FNN data length " + str(len(input_vector[0])))
     ffnn_model = training.feed_forward_network. \
         train_feed_forward_network(len(expected_results), input_vector, expected_results)
     logger.info("Training finished")
@@ -100,11 +103,11 @@ def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, in
     return rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list, preprocessed_chemical_features
 
 
-def test_whole_network_on_a_file(pdb_path, chemical_features_path, interaction_distance: float = 6.0, chemical_features=None, output_path=None):
+def test_whole_network_on_a_file(pdb_path, chemical_features_path, interaction_distance: float = 6.0, chemical_features=None, output_path=None, different_protein_names_index = None, different_residue_names_index = None):
     logger.info("Obtaining preprocessed data")
     preprocessed_rnn_data, expected_results, preprocessed_gnn_data, contact_matrix, \
         different_protein_names_index, different_residue_names_index, dataset, aminoacid_list = preprocessing_rnn_gnn(
-        pdb_path, interaction_distance, output_path)
+        pdb_path, interaction_distance, output_path, different_protein_names_index, different_residue_names_index)
     logger.info("Obtaining preprocessed chemical features")
     if chemical_features is None:
         preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)

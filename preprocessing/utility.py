@@ -66,39 +66,32 @@ def euclidean_distance(position1: tuple[float, float, float], position2: tuple[f
     return math.sqrt(sum([(position1[i] - position2[i]) ** 2 for i in range(len(position1))]))
 
 
-def to_one_hot_encoding_input_for_rnn(rnn_input: list[tuple[str, int, str]]) -> tuple[list[list[int]], dict[str, int], dict[str, int]]:
+def to_one_hot_encoding_input_for_rnn(rnn_input: list[tuple[str, int, str]], different_protein_names_index = None, different_residue_names_index = None) -> tuple[list[list[int]], dict[str, int], dict[str, int]]:
     # process input
     different_protein_names_index = dict()
-    different_residue_names_index = dict()
-    for index, (protein_name, _, residue_name) in enumerate(rnn_input):
+    for index, (protein_name, _, _) in enumerate(rnn_input):
         if protein_name not in different_protein_names_index:
             different_protein_names_index[protein_name] = len(different_protein_names_index)
-        if residue_name not in different_residue_names_index:
-            different_residue_names_index[residue_name] = len(different_residue_names_index)
 
-    amount_different_protein_names = len(different_protein_names_index.keys())
     amount_different_residue_names = len(different_residue_names_index.keys())
 
-    protein_name_zero_vector = [0] * amount_different_protein_names
     residue_name_zero_vector = [0] * amount_different_residue_names
 
     rnn_input_one_hot_encoding = []
     for index, (protein_name, residue_id, residue_name) in enumerate(rnn_input):
-        protein_name_one_hot_encoding = protein_name_zero_vector.copy()
         residue_name_one_hot_encoding = residue_name_zero_vector.copy()
 
-        protein_name_one_hot_encoding[different_protein_names_index[protein_name]] = 1
         residue_name_one_hot_encoding[different_residue_names_index[residue_name]] = 1
 
-        rnn_input_one_hot_encoding.append(protein_name_one_hot_encoding + [residue_id] + residue_name_one_hot_encoding)
+        rnn_input_one_hot_encoding.append([different_protein_names_index[protein_name]] + [residue_id] + residue_name_one_hot_encoding)
 
     return rnn_input_one_hot_encoding, different_protein_names_index, different_residue_names_index
 
 
-def to_one_hot_encoding_input_for_gcn(aminoacid_list: list[tuple[str, int, str]]) -> \
+def to_one_hot_encoding_input_for_gcn(aminoacid_list: list[tuple[str, int, str]], different_protein_names_index, different_residue_names_index) -> \
         tuple[Any, dict[str, int], dict[str, int]]:
     gcn_input_vector_one_hot_encoding, different_protein_names_index, different_residue_names_index = \
-        to_one_hot_encoding_input_for_rnn(aminoacid_list)
+        to_one_hot_encoding_input_for_rnn(aminoacid_list, different_protein_names_index, different_residue_names_index)
     return tf.convert_to_tensor(value=gcn_input_vector_one_hot_encoding, dtype=tf.float32), different_protein_names_index, \
            different_residue_names_index
 

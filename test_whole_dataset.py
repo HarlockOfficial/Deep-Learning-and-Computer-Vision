@@ -16,16 +16,25 @@ def test(pdb_folder_path: str, chemical_features_path: str, interaction_distance
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
+
+    ordered_names_list = ['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY',
+                          'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER',
+                          'THR', 'TRP', 'TYR', 'VAL']
+
     preprocessed_chemical_features = None
+    different_residue_names_index = dict()
+    for index, x in enumerate(ordered_names_list):
+        different_residue_names_index[x] = index
 
     for pdb_file in os.listdir(pdb_folder_path):
         if pdb_file.endswith(".pdb"):
             pdb_path = pdb_folder_path + "/" + pdb_file
             logger.info("Training for file: " + pdb_path)
-            rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, \
+            rnn_model, gnn_model, ffnn_model, different_protein_names_index, _, \
             aminoacid_list, preprocessed_chemical_features = main.\
                 test_whole_network_on_a_file(pdb_path, chemical_features_path, interaction_distance,
-                                             preprocessed_chemical_features, output_path)
+                                             preprocessed_chemical_features, output_path,
+                                             different_residue_names_index = different_residue_names_index)
             logger.info("Training for file: " + pdb_path + " finished")
 
 
