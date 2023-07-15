@@ -8,9 +8,9 @@ class GraphConvolutionalNetwork(tf.keras.models.Model):
         super(GraphConvolutionalNetwork, self).__init__()
         reg = tf.keras.regularizers.l2(2.5e-4)
         self.__dropout_0 = tf.keras.layers.Dropout(rate=0.5)
-        self.__convolution_0 = gcn_conv.GCNConv(channels=16, activation=activation, kernel_regularizer=reg, bias=use_bias)
+        self.__convolution_0 = gcn_conv.GCNConv(channels=16, activation=activation, kernel_regularizer=reg, bias=use_bias, kernel_initializer=tf.keras.initializers.zeros)
         self.__dropout_1 = tf.keras.layers.Dropout(rate=0.5)
-        self.__convolution_1 = gcn_conv.GCNConv(channels=n_label, activation=output_activation, bias=use_bias)
+        self.__convolution_1 = gcn_conv.GCNConv(channels=n_label, activation=output_activation, bias=use_bias, kernel_initializer=tf.keras.initializers.zeros)
 
     def call(self, inputs, training=None, mask=None):
         x, a = inputs

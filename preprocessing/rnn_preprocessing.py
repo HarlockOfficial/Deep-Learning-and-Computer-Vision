@@ -38,8 +38,8 @@ def extract_rnn_data(dataset_file_name: str) -> list[tuple[str, int, str]]:
             out.append((protein_name, residue_id, residue_name))
 
     for index, (protein_name, _, residue_name) in enumerate(out):
-        out[index] = (protein_name, index , residue_name)
-
+        out[index] = (protein_name, index, residue_name)
+    logger.info("Len out: " + str(len(out)))
     return out
 
 

@@ -7,9 +7,9 @@ class GraphAttentionNetwork(tf.keras.models.Model):
         super(GraphAttentionNetwork, self).__init__()
         self.__layers = []
         for i in range(4):
-            self.__layers.append(GATConv(2 ** (i + 3), activation=activation))
+            self.__layers.append(GATConv(2 ** (i + 3), activation=activation, kernel_initializer=tf.keras.initializers.zeros))
         self.__layers.append(tf.keras.layers.Flatten())
-        self.__layers.append(tf.keras.layers.Dense(n_label, activation=output_activation, use_bias=use_bias))
+        self.__layers.append(tf.keras.layers.Dense(n_label, activation=output_activation, use_bias=use_bias, kernel_initializer=tf.keras.initializers.zeros))
 
     def call(self, inputs, training=None, mask=None):
         x, a = inputs
