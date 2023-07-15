@@ -122,6 +122,15 @@ def compute_interacting_interface_for_single_file(pdb_path: str, pdb_parser: PDB
         residue_name = residue.get_resname()
         is_interface = 1 if residue in p1_interface else 0
         out.append(is_interface)
+
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    for i in range(len(out), int(os.getenv('MAX_INPUT'))):
+        out.append(0)
+
+    logger.info("Len out: " + str(len(out)))
+
     return out
 
 

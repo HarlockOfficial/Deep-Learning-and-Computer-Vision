@@ -96,6 +96,13 @@ def extract_gnn_data(dataset_file_name: str) -> list[tuple[str, int, str, float,
     for index, (protein_name, _, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z) in enumerate(out):
         out[index] = (protein_name, index, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z)
 
+    from dotenv import load_dotenv
+    load_dotenv()
+    import os
+
+    for i in range(len(out), int(os.getenv('MAX_INPUT'))):
+        out.append((0, 0, 0, 0, 0, 0))
+
     return out
 
 

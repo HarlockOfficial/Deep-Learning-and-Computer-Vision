@@ -81,9 +81,13 @@ def to_one_hot_encoding_input_for_rnn(rnn_input: list[tuple[str, int, str]], dif
     for index, (protein_name, residue_id, residue_name) in enumerate(rnn_input):
         residue_name_one_hot_encoding = residue_name_zero_vector.copy()
 
-        residue_name_one_hot_encoding[different_residue_names_index[residue_name]] = 1
+        protein_id = 0
 
-        rnn_input_one_hot_encoding.append([different_protein_names_index[protein_name]] + [residue_id] + residue_name_one_hot_encoding)
+        if not (protein_name == 0 and residue_id == 0 and residue_name == 0):
+            residue_name_one_hot_encoding[different_residue_names_index[residue_name]] = 1
+            protein_id = different_protein_names_index[protein_name]
+
+        rnn_input_one_hot_encoding.append([protein_id] + [residue_id] + residue_name_one_hot_encoding)
 
     return rnn_input_one_hot_encoding, different_protein_names_index, different_residue_names_index
 
@@ -111,7 +115,20 @@ def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: 
         aminoacid_name = element[2]
         aminoacid_features = preprocessed_chemical_features.values()
         for feature_dict in aminoacid_features:
-            feature_value = feature_dict[aminoacid_name]
+            if aminoacid_name == 0:
+                feature_value = 0.0
+            else:
+                feature_value = feature_dict[aminoacid_name]
             ffnn_input_vector_one_hot_encoding[index].append(feature_value)
+
+    from dotenv import load_dotenv
+    load_dotenv()
+    import os
+
+    for i in range(len(ffnn_input_vector_one_hot_encoding), int(os.getenv('MAX_INPUT'))):
+        tmp = []
+        for j in range(len(ffnn_input_vector_one_hot_encoding[i])):
+            tmp.append(0)
+        ffnn_input_vector_one_hot_encoding.append(tmp)
 
     return ffnn_input_vector_one_hot_encoding

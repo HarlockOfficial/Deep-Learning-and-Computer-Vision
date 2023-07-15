@@ -76,11 +76,18 @@ def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, in
     tensor_pre_array = tf.convert_to_tensor(preprocessed_rnn_data)
     tensor_exp_array = tf.convert_to_tensor(expected_results)
 
+    from dotenv import load_dotenv
+    load_dotenv()
+    import os
+
     rnn_model = training.recurrent_network. \
-        train_recurrent_network(len(expected_results), tensor_pre_array, tensor_exp_array)
+        train_recurrent_network(int(os.getenv('MAX_INPUT')), tensor_pre_array, tensor_exp_array)
+        #train_recurrent_network(len(expected_results), tensor_pre_array, tensor_exp_array)
+
     logger.info("Training the GCN")
     gnn_model = training.graph_convolutional_network. \
-        train_graph_convolutional_network(len(expected_results), dataset)
+        train_graph_convolutional_network(int(os.getenv('MAX_INPUT')), dataset)
+        #train_graph_convolutional_network(len(expected_results), dataset)
 
     logger.info("Predicting RNN results")
     rnn_result = rnn_model.predict(preprocessed_rnn_data, batch_size=len(preprocessed_rnn_data))
@@ -97,7 +104,8 @@ def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, in
     logger.info("Training the FFN")
     logger.info("Preprocessed FNN data length " + str(len(input_vector[0])))
     ffnn_model = training.feed_forward_network. \
-        train_feed_forward_network(len(expected_results), input_vector, expected_results)
+        train_feed_forward_network(int(os.getenv('MAX_INPUT')), input_vector, expected_results)
+        #train_feed_forward_network(len(expected_results), input_vector, expected_results)
     logger.info("Training finished")
 
     return rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list, preprocessed_chemical_features

@@ -10,15 +10,17 @@ from neural_network import FeedForwardNetwork
 
 def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_train=None):
     if os.path.exists(f'data/models/{model_name}/'):
-        with open(f'data/models/{model_name}/model.json', 'r') as f:
-            model = tf.keras.models.model_from_json(f.read(), custom_objects={'RecurrentNetwork':RecurrentNetwork, 'GCN':GCN, 'FeedForwardNetwork':FeedForwardNetwork})
+        #with open(f'data/models/{model_name}/model.json', 'r') as f:
+        #    model = tf.keras.models.model_from_json(f.read(), custom_objects={'RecurrentNetwork':RecurrentNetwork, 'GCN':GCN, 'FeedForwardNetwork':FeedForwardNetwork})
 
         weights = np.load(f'data/models/{model_name}/weight.json.npy', allow_pickle=True)
 
         if model_name == 'feed_forward_network':
+            model.build(input_shape=(None, 1037))
             model.set_weights(weights)
-            model.build(input_shape=(None, 269))
+            model.build(input_shape=(None, 1037))
         elif model_name == 'recurrent_network':
+            model.build(input_shape=(None, 22))
             model.set_weights(weights)
             model.build(input_shape=(None, 22))
         else:

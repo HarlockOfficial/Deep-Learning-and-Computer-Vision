@@ -1,4 +1,5 @@
 import json
+import os
 
 from Bio.PDB import PDBParser
 
@@ -39,7 +40,15 @@ def extract_rnn_data(dataset_file_name: str) -> list[tuple[str, int, str]]:
 
     for index, (protein_name, _, residue_name) in enumerate(out):
         out[index] = (protein_name, index, residue_name)
+
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    for i in range(len(out), int(os.getenv('MAX_INPUT'))):
+        out.append((0, 0, 0))
+
     logger.info("Len out: " + str(len(out)))
+
     return out
 
 
