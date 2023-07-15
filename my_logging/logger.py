@@ -43,7 +43,7 @@ class Logger(object):
     def add_file_path(self, log_level: str, log_file_path: str):
         if not os.path.exists(log_file_path):
             os.makedirs(os.path.dirname(log_file_path))
-        with open(log_file_path, 'a') as f:
+        with open(log_file_path, 'a') as _:
             pass
         log_level = self.__parse_log_level(log_level)
         fh = logging.FileHandler(log_file_path)
@@ -70,5 +70,6 @@ class Logger(object):
         else:
             raise ValueError('Invalid log level: ' + log_level)
         return log_level
+
 
 logger_instance = Logger()
