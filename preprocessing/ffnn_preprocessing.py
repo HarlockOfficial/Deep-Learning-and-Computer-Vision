@@ -20,11 +20,32 @@ def extract_all_chemical_features(feature_list_file_path: str) -> dict[str, dict
     with open(feature_list_file_path, 'r') as f:
         feature_list = f.readlines()
 
+    if os.path.isfile('data/features/last_features.txt'):
+        with open('data/features/last_features.txt', 'r') as f:
+            last_feature_list = f.readlines()
+        if last_feature_list == feature_list:
+            logger.info('The last feature list is the same as the current one. No need to extract the features again.')
+            return json.load(open('data/features/chemical_features.json', 'r'))
+        else:
+            logger.info('The last feature list is not the same as the current one. Extracting the features again.')
+    else:
+        logger.info('The last feature list is not present. Extracting the features again.')
+
+    # Write all the feature to a file
+    with open('data/features/last_features.txt', 'w') as f:
+        for feature in feature_list:
+            f.write(feature)
+
     feature_list = [feature.strip() for feature in feature_list]
     logger.debug('Feature list: {}'.format(feature_list))
     out = dict()
     for feature in feature_list:
         out[feature] = extract_chemical_feature(feature)
+
+    # Write the data to a file
+    with open('data/features/chemical_features.json', 'w') as f:
+        f.write(json.dumps(out))
+
     logger.debug('Out: {}'.format(out))
     return out
 
