@@ -1,1 +1,0 @@
-{"class_name": "GCN", "config": {"n_labels": 1000, "channels": 16, "activation": "relu", "output_activation": "linear", "use_bias": true, "dropout_rate": 0.5, "l2_reg": 0.00025}, "keras_version": "2.13.1", "backend": "tensorflow"}

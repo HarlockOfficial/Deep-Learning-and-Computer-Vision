@@ -2,6 +2,38 @@ import os
 
 import tensorflow as tf
 import numpy as np
+import preprocessing.utility as utility
+
+logger = utility.default_logger(__file__)
+
+
+def f1_m(y_true, y_pred):
+
+    print('_________________________true_________________________')
+    tf.print(y_true)
+    print('_________________________pred_________________________')
+    tf.print(y_pred)
+
+    max_value = tf.math.reduce_max(y_pred)
+    print('_________________________max-value-predicted_________________________')
+    tf.print(max_value)
+
+    max_value_true = tf.math.reduce_max(y_true)
+    print('_________________________max-value-true_________________________')
+    tf.print(max_value_true)
+
+    y_pred = tf.math.greater(y_pred, tf.constant([0.5], dtype=tf.float32))
+    print('_________________________thresholded_pred_________________________')
+    tf.print(y_pred)
+    precision_metric = tf.keras.metrics.Precision()
+    precision_metric.update_state(y_true, y_pred)
+    precision = precision_metric.result().numpy()
+    logger.debug("Precision: " + str(precision))
+    recall_metric = tf.keras.metrics.Recall()
+    recall_metric.update_state(y_true, y_pred)
+    recall = recall_metric.result().numpy()
+    logger.debug("Recall: " + str(recall))
+    return 2*((precision*recall)/(precision+recall+tf.keras.backend.epsilon()))
 
 
 def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_train=None):
@@ -22,11 +54,11 @@ def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_trai
         else:
             from spektral.data.loaders import SingleLoader
             loader = SingleLoader(x_train, epochs=1)
-            model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+            model.compile(optimizer='adam', loss='mse', metrics=[f1_m], run_eagerly=True)
             model.fit(loader.load())
             model.set_weights(weights)
 
-    model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='mse', metrics=[f1_m], run_eagerly=True)
 
     if y_train is None:
         from spektral.data.loaders import SingleLoader
@@ -40,37 +72,13 @@ def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_trai
 
     with open(f'data/models/{model_name}/model.json', 'w') as f:
         f.write(model.to_json())
-
+    print(tf.shape(model.get_weights()))
+    input("---------------------------------")
     np.save(f'data/models/{model_name}/weight.json', model.get_weights(), allow_pickle=True)
 
     return model
 
 
-def f1_m(y_true, y_pred):
-    print('_________________________true_________________________')
-    tf.print(y_true)
-    print('_________________________pred_________________________')
-    tf.print(y_pred[:, 0])
-    max_value = tf.math.reduce_max(y_pred)
-    print('_________________________max-value-predicted_________________________')
-    tf.print(max_value)
-
-    max_value_true = tf.math.reduce_max(y_true)
-    print('_________________________max-value-true_________________________')
-    tf.print(max_value_true)
-
-    y_pred = tf.math.greater(y_pred[:, 0], tf.constant([0.5], dtype=tf.float32))
-    print('_________________________thresholded_pred_________________________')
-    tf.print(y_pred)
-    precision_metric = tf.keras.metrics.Precision()
-    precision_metric.update_state(y_true, y_pred)
-    precision = precision_metric.result().numpy()
-    print(precision)
-    recall_metric = tf.keras.metrics.Recall()
-    recall_metric.update_state(y_true, y_pred)
-    recall = recall_metric.result().numpy()
-    print(recall)
-    return 2*((precision*recall)/(precision+recall+tf.keras.backend.epsilon()))
 
 
 def test_network(model: tf.keras.models.Model, model_name: str, x_test, y_test=None):
@@ -88,11 +96,11 @@ def test_network(model: tf.keras.models.Model, model_name: str, x_test, y_test=N
             model.build(input_shape=(None, 22))
             model.set_weights(weights)
             model.build(input_shape=(None, 22))
-            model.compile(optimizer='adam', loss='mse', metrics=['accuracy'], run_eagerly=True)
+            model.compile(optimizer='adam', loss='mse', metrics=[f1_m], run_eagerly=True)
         else:
             from spektral.data.loaders import SingleLoader
             loader = SingleLoader(x_test, epochs=1)
-            model.compile(optimizer='adam', loss='mse', metrics=['accuracy'], run_eagerly=True)
+            model.compile(optimizer='adam', loss='mse', metrics=[f1_m], run_eagerly=True)
             model.evaluate(loader.load())
             model.set_weights(weights)
 

@@ -73,7 +73,13 @@ def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, in
 
     logger.info("Training the RNN")
 
+    #print(str(preprocessed_rnn_data), str(expected_results), str(len(preprocessed_rnn_data)),
+    #      str(len(expected_results)))
+    #input('------------------------------------------------------------------')
     preprocessed_rnn_data, expected_results = utility.balance_classes(preprocessed_rnn_data, expected_results)
+    #input('------------------------------------------------------------------')
+    #print(str(preprocessed_rnn_data), str(expected_results), str(len(preprocessed_rnn_data)), str(len(expected_results)))
+    #input('------------------------------------------------------------------')
     tensor_pre_array = tf.convert_to_tensor(preprocessed_rnn_data)
     tensor_exp_array = tf.convert_to_tensor(expected_results)
 
@@ -82,12 +88,13 @@ def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, in
     import os
 
     rnn_model = training.recurrent_network. \
-        train_recurrent_network(int(os.getenv('MAX_INPUT')), tensor_pre_array, tensor_exp_array)
+        train_recurrent_network(2*int(os.getenv('MAX_INPUT')), tensor_pre_array, tensor_exp_array)
         #train_recurrent_network(len(expected_results), tensor_pre_array, tensor_exp_array)
 
     logger.info("Training the GCN")
     gnn_model = training.graph_convolutional_network. \
-        train_graph_convolutional_network(int(os.getenv('MAX_INPUT')), dataset)
+        train_graph_convolutional_network(1, dataset)
+        #train_graph_convolutional_network(int(os.getenv('MAX_INPUT')), dataset)
         #train_graph_convolutional_network(len(expected_results), dataset)
 
     logger.info("Predicting RNN results")
@@ -105,7 +112,7 @@ def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, in
     logger.info("Training the FFN")
     logger.info("Preprocessed FNN data length " + str(len(input_vector[0])))
     ffnn_model = training.feed_forward_network. \
-        train_feed_forward_network(int(os.getenv('MAX_INPUT')), input_vector, expected_results)
+        train_feed_forward_network(2*int(os.getenv('MAX_INPUT')), input_vector, expected_results)
         #train_feed_forward_network(len(expected_results), input_vector, expected_results)
     logger.info("Training finished")
 
