@@ -47,7 +47,7 @@ def extract_rnn_data(dataset_file_name: str) -> list[tuple[str, int, str]]:
     for i in range(len(out), int(os.getenv('MAX_INPUT'))):
         out.append((0, 0, 0))
 
-    logger.info("Len out: " + str(len(out)))
+    logger.debug("Len out: " + str(len(out)))
 
     return out
 

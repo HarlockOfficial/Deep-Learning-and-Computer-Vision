@@ -132,11 +132,13 @@ def test_whole_network_on_a_file(pdb_path, chemical_features_path, interaction_d
     tensor_pre_array = tf.convert_to_tensor(preprocessed_rnn_data)
     tensor_exp_array = tf.convert_to_tensor(expected_results)
 
-    rnn_model = training.recurrent_network. \
+    rnn_model, rnn_result = training.recurrent_network. \
         test_recurrent_network(len(expected_results), tensor_pre_array, tensor_exp_array)
+    logger.info("RNN result: " + str(rnn_result))
     logger.info("Training the GCN")
-    gnn_model = training.graph_convolutional_network. \
+    gnn_model, gnn_result = training.graph_convolutional_network. \
         test_graph_convolutional_network(len(expected_results), dataset)
+    logger.info("GCN result: " + str(gnn_result))
 
     logger.info("Predicting RNN results")
     rnn_result = rnn_model.predict(preprocessed_rnn_data, batch_size=len(preprocessed_rnn_data))
