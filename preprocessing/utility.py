@@ -1,7 +1,7 @@
 import argparse
 from typing import Any
 import tensorflow as tf
-
+from imblearn.ensemble import EasyEnsemble
 
 def add_default_parameters(parser: argparse.ArgumentParser):
     parser.add_argument('--debug', action='store_true', help='enable debug mode')
@@ -132,3 +132,9 @@ def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: 
         ffnn_input_vector_one_hot_encoding.append(tmp)
 
     return ffnn_input_vector_one_hot_encoding
+
+
+def balance_classes(x_train, y_train):
+    eec = EasyEnsemble(random_state=42)
+    x_res, y_res = eec.fit_resample(x_train, y_train)
+    return x_res, y_res

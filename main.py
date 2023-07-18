@@ -73,6 +73,7 @@ def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, in
 
     logger.info("Training the RNN")
 
+    preprocessed_rnn_data, expected_results = utility.balance_classes(preprocessed_rnn_data, expected_results)
     tensor_pre_array = tf.convert_to_tensor(preprocessed_rnn_data)
     tensor_exp_array = tf.convert_to_tensor(expected_results)
 
