@@ -1,0 +1,1 @@
+{"class_name": "FeedForwardNetwork", "config": {"name": "feed_forward_network_339", "trainable": true, "dtype": "float32", "n_label": 1000, "activation": "relu", "output_activation": "linear", "use_bias": true}, "keras_version": "2.13.1", "backend": "tensorflow"}
