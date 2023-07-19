@@ -9,7 +9,7 @@ import tensorflow as tf
 logger = utility.default_logger(__file__)
 
 
-def create_distance_matrix(aminoacid_mass_center: pandas.DataFrame) -> list[list[tuple[str, int, str, str, int, str, float]]]:
+def create_distance_matrix(aminoacid_mass_center: list[list[tuple[str, int, str, float, float, float]]]) -> list[list[tuple[str, int, str, str, int, str, float]]]:
     """
         Creates a distance matrix from the provided list of amino acids.
 
@@ -17,13 +17,11 @@ def create_distance_matrix(aminoacid_mass_center: pandas.DataFrame) -> list[list
         :returns a distance matrix
     """
     out = []
-    for i, row_i in aminoacid_mass_center.iterrows():
+    for i, row_i in enumerate(aminoacid_mass_center):
         out.append([])
-        for j, row_j in aminoacid_mass_center.iterrows():
-            out[i].append((row_i['protein_name'], row_i['residue_id'],
-                           row_i['residue_name'],
-                           utility.euclidean_distance((row_i['center_of_mass_x'], row_i['center_of_mass_y'], row_i['center_of_mass_z']),
-                                                      (row_j['center_of_mass_x'], row_j['center_of_mass_y'], row_j['center_of_mass_z']))))
+        for j, row_j in enumerate(aminoacid_mass_center):
+            out[i].append((row_i[0], row_i[1], row_i[2],
+                           utility.euclidean_distance(aminoacid_mass_center[i][3:], aminoacid_mass_center[j][3:])))
     return out
 
 

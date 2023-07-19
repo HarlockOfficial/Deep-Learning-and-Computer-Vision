@@ -9,7 +9,8 @@ import training.recurrent_network
 logger = utility.default_logger(__file__)
 
 
-def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, output_path: str = None, different_protein_names_index = None, different_residue_names_index = None):
+def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, output_path: str = None,
+                          different_protein_names_index = None, different_residue_names_index = None):
     """
         This function will be used to preprocess the dataset.
         It will return the preprocessed data.
@@ -18,7 +19,8 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
 
     extract_data = preprocessing.utility.extract_data(pdb_path)
     #if output_path is not None:
-    #    preprocessing.rnn_preprocessing.dump_to_file_csv(extract_data, output_path + "/preprocessed.csv") TODO: fix later
+    #    preprocessing.rnn_preprocessing.dump_to_file_csv(extract_data, output_path + "/preprocessed.csv")
+    #    TODO: fix later
     expected_results = preprocessing.determine_interface \
         .compute_interface(interaction_distance=interaction_distance, pdb_path=pdb_path)
     if expected_results is None:
@@ -27,11 +29,14 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
 
     new_extract_data = []
     for protein_name, residue_id, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z in extract_data:
-        new_extract_data.append([protein_name, residue_id, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z])
+        new_extract_data.append([protein_name, residue_id, residue_name, center_of_mass_x, center_of_mass_y,
+                                 center_of_mass_z])
 
     logger.debug("Expected results main: " + str(expected_results))
     import pandas as pd
-    df = pd.DataFrame(new_extract_data, columns=['protein_name', 'residue_id', 'residue_name', 'center_of_mass_x', 'center_of_mass_y', 'center_of_mass_z'])
+    df = pd.DataFrame(new_extract_data, columns=['protein_name', 'residue_id', 'residue_name', 'center_of_mass_x',
+                                                 'center_of_mass_y', 'center_of_mass_z'])
+    del new_extract_data
     if max(expected_results) != min(expected_results):
         extract_data, expected_results = preprocessing.utility.balance_classes(df, expected_results)
     else:
@@ -39,29 +44,29 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
         extract_data = df
         logger.info("There is only one class so no resample")
 
-    #if output_path is not None:
-        #preprocessing.gnn_preprocessing.dump_to_file_csv(expected_results, output_path + "/preprocessed.csv") TODO: fix later
-    distance_matrix = preprocessing.gnn_preprocessing.create_distance_matrix(extract_data)
-    contact_matrix = preprocessing.gnn_preprocessing.create_contact_matrix(distance_matrix)
+    new_extract_data, new_expected_results = preprocessing.utility.split_data(extract_data, expected_results)
+    for extract_data, expected_results in zip(new_extract_data, new_expected_results):
+        #if output_path is not None:
+            #preprocessing.gnn_preprocessing.dump_to_file_csv(expected_results, output_path + "/preprocessed.csv")
+        # TODO: fix later
+        distance_matrix = preprocessing.gnn_preprocessing.create_distance_matrix(extract_data)
+        contact_matrix = preprocessing.gnn_preprocessing.create_contact_matrix(distance_matrix)
+        del distance_matrix
+        #The aminoacid list contains protein name, residue number and residue name which is the actual input for the GCN
 
-    #The aminoacid list contains protein name, residue number and residue name which is the actual input for the GCN
+        aminoacid_list = [x[0: 3] for x in extract_data.values.tolist()]
+        del distance_matrix
+        input_one_hot_encoding, different_residue_names_index = utility.to_one_hot_encoding_input(
+            aminoacid_list, different_residue_names_index)
 
-    aminoacid_list = [x[0: 3] for x in extract_data.values.tolist()]
-    del distance_matrix
-    input_one_hot_encoding, different_residue_names_index, expected_results = utility.to_one_hot_encoding_input(
-        aminoacid_list, different_residue_names_index, expected_results)
+        import neural_network.utility.gcn_dataset as gcn_dataset
+        import numpy as np
+        input_tensor = tf.convert_to_tensor(value=input_one_hot_encoding, dtype=tf.float32)
+        dataset = gcn_dataset.MyDataset(input_tensor.numpy(), contact_matrix.numpy(), np.array(expected_results))
+        logger.debug("Expected results: " + str(expected_results))
 
-    import neural_network.utility.gcn_dataset as gcn_dataset
-    import numpy as np
-
-    for index, value in enumerate(input_one_hot_encoding):
-        input_tensor = tf.convert_to_tensor(value=value, dtype=tf.float32)
-
-        dataset = gcn_dataset.MyDataset(input_tensor.numpy(), contact_matrix[index].numpy(), np.array(expected_results[index]))
-
-        logger.debug("Expected results: " + str(expected_results[index]))
-
-        yield aminoacid_list, expected_results, input_one_hot_encoding, contact_matrix, different_protein_names_index, different_residue_names_index, dataset, aminoacid_list
+        yield aminoacid_list, expected_results, input_one_hot_encoding, contact_matrix, different_protein_names_index, \
+            different_residue_names_index, dataset, aminoacid_list
 
 
 def preprocess_chemical_features(chemical_features_path: str, output_path: str = None):

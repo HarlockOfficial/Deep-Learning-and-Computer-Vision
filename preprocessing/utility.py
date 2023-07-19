@@ -1,9 +1,11 @@
 import argparse
-from typing import Any
+from typing import Any, Union, Tuple, List
+
+import pandas as pd
 import tensorflow as tf
 from Bio.PDB import PDBParser
 from imblearn.over_sampling import SMOTENC
-from typing import Union
+
 
 def is_hetero(res):
     return res.get_full_id()[3][0] != ' '
@@ -101,8 +103,9 @@ def extract_data(dataset_file_name: str) -> list[tuple[str, int, str, float, flo
             center_of_mass = residue.center_of_mass()
             logger.debug("center of mass: " + str(center_of_mass))
             residue_name, residue_id, protein_name = get_residue_name_and_protein_name(residue, chain,
-                                                                                   dataset_file_name, logger)
-            out.append((protein_name, residue_id, residue_name, center_of_mass[0], center_of_mass[1], center_of_mass[2]))
+                                                                                       dataset_file_name, logger)
+            out.append(
+                (protein_name, residue_id, residue_name, center_of_mass[0], center_of_mass[1], center_of_mass[2]))
 
     for index, (protein_name, _, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z) in enumerate(out):
         out[index] = (protein_name, index, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z)
@@ -117,7 +120,8 @@ def extract_data(dataset_file_name: str) -> list[tuple[str, int, str, float, flo
     return out
 
 
-def to_one_hot_encoding_input(input_vector: list[tuple[str, int, str]], different_residue_names_index, expected_results=None) -> tuple[list[list[int]], dict[str, int], Union[list[list[int]], None]]:
+def to_one_hot_encoding_input(input_vector: list[tuple[str, int, str]], different_residue_names_index) -> \
+        tuple[list[list[int]], dict[str, int]]:
     # process input
     different_protein_names_index = dict()
     for index, (protein_name, _, _) in enumerate(input_vector):
@@ -128,41 +132,22 @@ def to_one_hot_encoding_input(input_vector: list[tuple[str, int, str]], differen
 
     residue_name_zero_vector = [0] * amount_different_residue_names
 
-    if expected_results is not None:
-        new_expected_results = []
-
-    last_index = 0
-    protein_index = dict()
     input_one_hot_encoding = []
     for index, (protein_name, residue_id, residue_name) in enumerate(input_vector):
-        if protein_name not in protein_index.keys():
-            protein_index[protein_name] = last_index
-            last_index += 1
-            input_one_hot_encoding.append([])
-            if expected_results is not None:
-                new_expected_results.append([])
-
         residue_name_one_hot_encoding = residue_name_zero_vector.copy()
 
         if not (protein_name == 0 and residue_id == 0 and residue_name == 0):
             residue_name_one_hot_encoding[different_residue_names_index[residue_name]] = 1
 
-        input_one_hot_encoding[protein_index[protein_name]].append(residue_name_one_hot_encoding)
-
-        if expected_results is not None:
-            new_expected_results[protein_index[protein_name]].append(expected_results[index])
-
-    if expected_results is not None:
-        expected_results = new_expected_results
+        input_one_hot_encoding.append(residue_name_one_hot_encoding)
 
     logger.debug("input_one_hot_encoding: " + str(input_one_hot_encoding))
-    logger.debug("expected_results: " + str(expected_results))
 
-    return input_one_hot_encoding, different_residue_names_index, expected_results
+    return input_one_hot_encoding, different_residue_names_index
 
 
 def to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features: dict[str, dict[str, float]],
-                                       aminoacid_list: list[tuple[str, int, str]]) ->\
+                                       aminoacid_list: list[tuple[str, int, str]]) -> \
         list[list[float]]:
     ffnn_input_vector_one_hot_encoding = []
 
@@ -208,9 +193,11 @@ def balance_classes(x_train, y_train):
         return x_train, y_train
 
     if num_of_ones > num_of_zeros and num_of_zeros < 5:
-        smt = SMOTENC(random_state=42, categorical_features=['protein_name', 'residue_name'], k_neighbors=num_of_zeros-1)
+        smt = SMOTENC(random_state=42, categorical_features=['protein_name', 'residue_name'],
+                      k_neighbors=num_of_zeros - 1)
     elif num_of_zeros > num_of_ones and num_of_ones < 5:
-        smt = SMOTENC(random_state=42, categorical_features=['protein_name', 'residue_name'], k_neighbors=num_of_ones-1)
+        smt = SMOTENC(random_state=42, categorical_features=['protein_name', 'residue_name'],
+                      k_neighbors=num_of_ones - 1)
     else:
         smt = SMOTENC(random_state=42, categorical_features=['protein_name', 'residue_name'])
     x_res, y_res = smt.fit_resample(x_train, y_train)
@@ -218,3 +205,31 @@ def balance_classes(x_train, y_train):
 
 
 logger = default_logger(__file__)
+
+
+def split_data(extract_data: pd.DataFrame, expected_results: pd.DataFrame):
+    """
+    columns of extract_data ['protein_name', 'residue_id', 'residue_name', 'center_of_mass_x',
+                                                 'center_of_mass_y', 'center_of_mass_z'])
+    i have to split both extract_data and expected_results in vectors of vectors
+    there will be one vector for each protein name, and each vector will contain the data for each residue
+    extract_data and expected_results match on row index value
+    """
+    new_extract_data = []
+    new_expected_results = []
+    protein_name_index = dict()
+    for _, protein_name in enumerate(extract_data['protein_name']):
+        if protein_name not in protein_name_index:
+            protein_name_index[protein_name] = len(protein_name_index)
+            new_extract_data.append([])
+            new_expected_results.append([])
+
+    logger.debug("protein_name_index: " + str(protein_name_index))
+
+    for i, element_row in extract_data.iterrows():
+        new_extract_data[protein_name_index[element_row['protein_name']]].append(element_row.to_list())
+        new_expected_results[protein_name_index[element_row['protein_name']]].append(expected_results.iloc[i])
+
+    logger.debug("new_extract_data: " + str(new_extract_data))
+    logger.debug("new_expected_results: " + str(new_expected_results))
+    return new_extract_data, new_expected_results
