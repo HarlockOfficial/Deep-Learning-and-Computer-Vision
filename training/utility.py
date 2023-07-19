@@ -8,23 +8,18 @@ logger = utility.default_logger(__file__)
 
 
 def f1_m(y_true, y_pred):
-    """
-    print('_________________________true_________________________')
-    tf.print(y_true)
-    print('_________________________pred_________________________')
-    tf.print(y_pred)
+    logger.debug('true: ' + y_true)
+    logger.debug('pred: ' + y_pred)
 
     max_value = tf.math.reduce_max(y_pred)
-    print('_________________________max-value-predicted_________________________')
-    tf.print(max_value)
-
     max_value_true = tf.math.reduce_max(y_true)
-    print('_________________________max-value-true_________________________')
-    tf.print(max_value_true)
-    """
+
+    logger.debug('max-value-predicted: ' + max_value)
+    logger.debug('max-value-true: ' + str(max_value_true))
+
     y_pred = tf.math.greater(y_pred, tf.constant([0.5], dtype=tf.float32))
-    #print('_________________________thresholded_pred_________________________')
-    #tf.print(y_pred)
+    logger.debug('thresholded-pred: ' + y_pred)
+
     precision_metric = tf.keras.metrics.Precision()
     precision_metric.update_state(y_true, y_pred)
     precision = precision_metric.result().numpy()
