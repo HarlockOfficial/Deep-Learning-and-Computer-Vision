@@ -8,7 +8,7 @@ logger = utility.default_logger(__file__)
 
 
 def f1_m(y_true, y_pred):
-
+    """
     print('_________________________true_________________________')
     tf.print(y_true)
     print('_________________________pred_________________________')
@@ -21,10 +21,10 @@ def f1_m(y_true, y_pred):
     max_value_true = tf.math.reduce_max(y_true)
     print('_________________________max-value-true_________________________')
     tf.print(max_value_true)
-
+    """
     y_pred = tf.math.greater(y_pred, tf.constant([0.5], dtype=tf.float32))
-    print('_________________________thresholded_pred_________________________')
-    tf.print(y_pred)
+    #print('_________________________thresholded_pred_________________________')
+    #tf.print(y_pred)
     precision_metric = tf.keras.metrics.Precision()
     precision_metric.update_state(y_true, y_pred)
     precision = precision_metric.result().numpy()
@@ -37,6 +37,25 @@ def f1_m(y_true, y_pred):
 
 
 def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_train=None):
+    if os.path.exists(f'data/models/{model_name}/weights.tf'):
+        model.load_weights(f'data/models/{model_name}/weights.tf', save_format='tf')
+    model.compile(optimizer='adam', loss='mse', metrics=[f1_m], run_eagerly=True )
+
+    if y_train is None:
+        from spektral.data.loaders import SingleLoader
+        loader = SingleLoader(x_train)
+        #model.fit(loader.load(), steps_per_epoch=100, epochs=100, batch_size=x_train.size(), use_multiprocessing=True, verbose=1) #change epochs to around 7000
+        model.fit(loader.load(), steps_per_epoch=10, epochs=10, batch_size=x_train.size(), use_multiprocessing=True,
+                  verbose=1)
+    else:
+        model.fit(x=x_train, y=y_train, epochs=100, batch_size=len(x_train), use_multiprocessing=True, verbose=1)
+
+    if not os.path.exists(f'data/models/{model_name}'):
+        os.makedirs(f'data/models/{model_name}')
+    model.save_weights(f'data/models/{model_name}/weights.tf', save_format='tf')
+    return model
+
+    """
     if os.path.exists(f'data/models/{model_name}/'):
         #with open(f'data/models/{model_name}/model.json', 'r') as f:
         #    model = tf.keras.models.model_from_json(f.read(), custom_objects={'RecurrentNetwork':RecurrentNetwork, 'GCN':GCN, 'FeedForwardNetwork':FeedForwardNetwork})
@@ -74,8 +93,7 @@ def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_trai
         f.write(model.to_json())
     print(tf.shape(model.get_weights()))
     input("---------------------------------")
-    np.save(f'data/models/{model_name}/weight.json', model.get_weights(), allow_pickle=True)
-
+    np.save(f'data/models/{model_name}/weight.json', model.get_weights(), allow_pickle=True)"""
     return model
 
 

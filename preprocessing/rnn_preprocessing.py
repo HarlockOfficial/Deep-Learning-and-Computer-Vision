@@ -7,50 +7,6 @@ import utility
 
 logger = utility.default_logger(__file__)
 
-def is_hetero(res):
-    return res.get_full_id()[3][0] != ' '
-
-def extract_rnn_data(dataset_file_name: str) -> list[tuple[str, int, str]]:
-    """
-        Using BioPython, reads the provided pdb input file.
-        For each amino acid obtains the residue name and the related protein name.
-
-        :param dataset_file_name: the name of the pdb input file
-        :returns a list of tuples, with one entry for each amino acid.
-            The entry is a tuple containing:
-                - the residue name
-                - the protein name
-    """
-    p = PDBParser(PERMISSIVE=True)
-    structure = p.get_structure('protein', dataset_file_name)
-    out = []
-
-    for chain in structure.get_chains():
-        for residue in chain:
-            if is_hetero(residue):
-                logger.debug("skipping residue couse it's heteroatm: " + str(residue))
-                continue
-            logger.debug("processing residue: " + str(residue))
-            if residue.get_resname() == 'HOH':
-                logger.debug("skipping residue: " + str(residue))
-                continue
-            residue_name, residue_id, protein_name = utility\
-                .get_residue_name_and_protein_name(residue, chain, dataset_file_name, logger)
-            out.append((protein_name, residue_id, residue_name))
-
-    for index, (protein_name, _, residue_name) in enumerate(out):
-        out[index] = (protein_name, index, residue_name)
-
-    from dotenv import load_dotenv
-    load_dotenv()
-
-    for i in range(len(out), int(os.getenv('MAX_INPUT'))):
-        out.append((0, 0, 0))
-
-    logger.debug("Len out: " + str(len(out)))
-
-    return out
-
 
 def dump_to_file(pdb_data: list[tuple[str, int, str]], output_file_path: str):
     """

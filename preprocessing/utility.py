@@ -1,7 +1,12 @@
 import argparse
 from typing import Any
 import tensorflow as tf
-from imblearn.over_sampling import ADASYN
+from Bio.PDB import PDBParser
+from imblearn.over_sampling import SMOTENC
+
+def is_hetero(res):
+    return res.get_full_id()[3][0] != ' '
+
 
 def add_default_parameters(parser: argparse.ArgumentParser):
     parser.add_argument('--debug', action='store_true', help='enable debug mode')
@@ -66,10 +71,55 @@ def euclidean_distance(position1: tuple[float, float, float], position2: tuple[f
     return math.sqrt(sum([(position1[i] - position2[i]) ** 2 for i in range(len(position1))]))
 
 
-def to_one_hot_encoding_input_for_rnn(rnn_input: list[tuple[str, int, str]], different_protein_names_index = None, different_residue_names_index = None) -> tuple[list[list[int]], dict[str, int], dict[str, int]]:
+def extract_data(dataset_file_name: str) -> list[tuple[str, int, str, float, float, float]]:
+    """
+        Using BioPython, reads the provided pdb input file.
+        For each amino acid obtains the center of mass, the residue name and the related protein name.
+
+        :param dataset_file_name: the name of the pdb input file
+        :returns a list of tuples, with one entry for each amino acid.
+            The entry is a tuple containing:
+                - the center of mass (x, y, z)
+                - the residue name
+                - the protein name
+    """
+    p = PDBParser(PERMISSIVE=True)
+    structure = p.get_structure('protein', dataset_file_name)
+    out = []
+
+    for chain in structure.get_chains():
+        logger.debug("processing chain: " + str(chain))
+        for residue in chain:
+            logger.debug("processing residue: " + str(residue))
+            if is_hetero(residue):
+                logger.debug("skipping residue couse it's heteroatm: " + str(residue))
+                continue
+            if residue.get_resname() == 'HOH':
+                logger.debug("skipping residue: " + str(residue))
+                continue
+            center_of_mass = residue.center_of_mass()
+            logger.debug("center of mass: " + str(center_of_mass))
+            residue_name, residue_id, protein_name = get_residue_name_and_protein_name(residue, chain,
+                                                                                   dataset_file_name, logger)
+            out.append((protein_name, residue_id, residue_name, center_of_mass[0], center_of_mass[1], center_of_mass[2]))
+
+    for index, (protein_name, _, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z) in enumerate(out):
+        out[index] = (protein_name, index, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z)
+
+    """from dotenv import load_dotenv
+    load_dotenv()
+    import os
+
+    for i in range(len(out), int(os.getenv('MAX_INPUT'))):
+        out.append((0, 0, 0, 0, 0, 0))
+    """
+    return out
+
+
+def to_one_hot_encoding_input(input_vector: list[tuple[str, int, str]], different_residue_names_index) -> tuple[list[list[int]], dict[str, int]]:
     # process input
     different_protein_names_index = dict()
-    for index, (protein_name, _, _) in enumerate(rnn_input):
+    for index, (protein_name, _, _) in enumerate(input_vector):
         if protein_name not in different_protein_names_index:
             different_protein_names_index[protein_name] = len(different_protein_names_index)
 
@@ -77,8 +127,8 @@ def to_one_hot_encoding_input_for_rnn(rnn_input: list[tuple[str, int, str]], dif
 
     residue_name_zero_vector = [0] * amount_different_residue_names
 
-    rnn_input_one_hot_encoding = []
-    for index, (protein_name, residue_id, residue_name) in enumerate(rnn_input):
+    input_one_hot_encoding = []
+    for index, (protein_name, residue_id, residue_name) in enumerate(input_vector):
         residue_name_one_hot_encoding = residue_name_zero_vector.copy()
 
         protein_id = 0
@@ -87,17 +137,9 @@ def to_one_hot_encoding_input_for_rnn(rnn_input: list[tuple[str, int, str]], dif
             residue_name_one_hot_encoding[different_residue_names_index[residue_name]] = 1
             protein_id = different_protein_names_index[protein_name]
 
-        rnn_input_one_hot_encoding.append([protein_id] + [residue_id] + residue_name_one_hot_encoding)
+        input_one_hot_encoding.append([protein_id] + [residue_id] + residue_name_one_hot_encoding)
 
-    return rnn_input_one_hot_encoding, different_protein_names_index, different_residue_names_index
-
-
-def to_one_hot_encoding_input_for_gcn(aminoacid_list: list[tuple[str, int, str]], different_protein_names_index, different_residue_names_index) -> \
-        tuple[Any, dict[str, int], dict[str, int]]:
-    gcn_input_vector_one_hot_encoding, different_protein_names_index, different_residue_names_index = \
-        to_one_hot_encoding_input_for_rnn(aminoacid_list, different_protein_names_index, different_residue_names_index)
-    return tf.convert_to_tensor(value=gcn_input_vector_one_hot_encoding, dtype=tf.float32), different_protein_names_index, \
-           different_residue_names_index
+    return input_one_hot_encoding, different_residue_names_index
 
 
 def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: list[list[int]],
@@ -108,6 +150,8 @@ def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: 
     for element_list in rnn_result:
         ffnn_input_vector_one_hot_encoding.append([float(x) for x in element_list])
 
+    print(len(rnn_result))
+    print(len(gnn_result))
     for index, element in enumerate(rnn_result):
         ffnn_input_vector_one_hot_encoding[index].extend([float(x) for x in gnn_result[index]])
 
@@ -115,12 +159,16 @@ def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: 
         aminoacid_name = element[2]
         aminoacid_features = preprocessed_chemical_features.values()
         for feature_dict in aminoacid_features:
-            if aminoacid_name == 0:
+            feature_value = feature_dict[aminoacid_name]
+            ffnn_input_vector_one_hot_encoding[index].append(feature_value)
+
+            """if aminoacid_name == 0:
                 feature_value = 0.0
             else:
                 feature_value = feature_dict[aminoacid_name]
             ffnn_input_vector_one_hot_encoding[index].append(feature_value)
 
+    
     from dotenv import load_dotenv
     load_dotenv()
     import os
@@ -130,11 +178,14 @@ def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: 
         for j in range(len(ffnn_input_vector_one_hot_encoding[i])):
             tmp.append(0)
         ffnn_input_vector_one_hot_encoding.append(tmp)
-
+    """
     return ffnn_input_vector_one_hot_encoding
 
 
 def balance_classes(x_train, y_train):
-    ada = ADASYN(random_state=42)
-    x_res, y_res = ada.fit_resample(x_train, y_train)
+    smt = SMOTENC(random_state=42, categorical_features=['protein_name', 'residue_name'])
+    x_res, y_res = smt.fit_resample(x_train, y_train)
     return x_res, y_res
+
+
+logger = default_logger(__file__)
