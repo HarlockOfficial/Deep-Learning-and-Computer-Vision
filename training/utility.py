@@ -34,7 +34,9 @@ def f1_m(y_true, y_pred):
 def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_train=None, validation_data=None):
     if os.path.exists(f'data/models/{model_name}/weights.tf'):
         model.load_weights(f'data/models/{model_name}/weights.tf', save_format='tf')
-    model.compile(optimizer='adam', loss='mse', metrics=[f1_m], run_eagerly=True )
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=[f1_m], run_eagerly=True )
+
+    logger.debug("Model name: " + str(model_name))
 
     if y_train is None:
         from spektral.data.loaders import SingleLoader
@@ -45,6 +47,8 @@ def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_trai
                   verbose=1, validation_data=loader_validation.load(), validation_steps=10)
     else:
        res = model.fit(x=x_train, y=y_train, epochs=100, batch_size=len(x_train), use_multiprocessing=True, verbose=1, validation_data=validation_data, validation_steps=10)
+
+    logger.debug("Model summary: " + str(model.summary()))
 
     if res:
         logger.debug("History model name: " + str(model_name) + " History: " + str(res.history))

@@ -142,20 +142,16 @@ def to_one_hot_encoding_input(input_vector: list[tuple[str, int, str]], differen
     return input_one_hot_encoding, different_residue_names_index
 
 
-def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: list[list[int]],
-                                       preprocessed_chemical_features: dict[str, dict[str, float]],
+def to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features: dict[str, dict[str, float]],
                                        aminoacid_list: list[tuple[str, int, str]]) ->\
         list[list[float]]:
     ffnn_input_vector_one_hot_encoding = []
-    for element_list in rnn_result:
-        ffnn_input_vector_one_hot_encoding.append([float(x) for x in element_list])
-
-    for index, element in enumerate(rnn_result):
-        ffnn_input_vector_one_hot_encoding[index].extend([float(x) for x in gnn_result[index]])
 
     for index, element in enumerate(aminoacid_list):
         aminoacid_name = element[2]
         aminoacid_features = preprocessed_chemical_features.values()
+        tmp = []
+        ffnn_input_vector_one_hot_encoding.append(tmp)
         for feature_dict in aminoacid_features:
             feature_value = feature_dict[aminoacid_name]
             ffnn_input_vector_one_hot_encoding[index].append(feature_value)

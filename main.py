@@ -137,7 +137,7 @@ def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, in
 
     logger.debug(f"{rnn_result}\n\n{gnn_result}\n\n{preprocessed_chemical_features}")
 
-    input_vector = utility.to_one_hot_encoding_input_for_ffnn(rnn_result, gnn_result, preprocessed_chemical_features, aminoacid_list)
+    input_vector = utility.to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features, aminoacid_list)
 
     logger.info("Predicting RNN validation results")
     validation_rnn_result = rnn_model.predict(validation_rnn_data, batch_size=len(validation_rnn_data))
@@ -150,7 +150,7 @@ def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, in
                                    batch_size=len(validation_gnn_data))
 
     logger.debug(f"{validation_rnn_result}\n\n{validation_gnn_result}\n\n{preprocessed_chemical_features}")
-    validation_vector = utility.to_one_hot_encoding_input_for_ffnn(validation_rnn_result, validation_gnn_result, preprocessed_chemical_features, validation_aminoacid_list)
+    validation_vector = utility.to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features, validation_aminoacid_list)
 
     logger.info("Training the FFN")
     logger.info("Preprocessed FNN data length " + str(len(input_vector[0])))
@@ -161,7 +161,7 @@ def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, in
     '''
 
     ffnn_model = training.feed_forward_network. \
-        train_feed_forward_network(1, input_vector, expected_results, validation_data=(tf.convert_to_tensor(validation_vector, dtype=float32), tf.convert_to_tensor(validation_expected_results, dtype=float32)))
+        train_feed_forward_network(1, [np.array(rnn_result), np.array(gnn_result), np.array(input_vector)], np.array(expected_results), validation_data=((np.array(validation_rnn_result), np.array(validation_gnn_result), np.array(validation_vector)), np.array(validation_expected_results)))
         #train_feed_forward_network(len(expected_results), input_vector, expected_results)
     logger.info("Training finished")
 
@@ -241,9 +241,21 @@ if __name__ == "__main__":
     utility.default_logging(args, logger)
 
     logger.info("Starting the program")
+
+    ordered_names_list = ['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY',
+                          'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER',
+                          'THR', 'TRP', 'TYR', 'VAL']
+
+    preprocessed_chemical_features = None
+    different_residue_names_index = dict()
+    for index, x in enumerate(ordered_names_list):
+        different_residue_names_index[x] = index
+
     rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list, \
     preprocess_chemical_features = train_whole_network_on_a_file(args.pdb_path, args.chemical_features_path,
-                                                                 args.interaction_distance, args.output)
+                                                                 args.interaction_distance, args.output,
+                                                                 different_residue_names_index=different_residue_names_index)
+
     logger.info("Trained RNN, with configs:\n" + str(rnn_model.get_config()))
     logger.info("Trained GCNN, with configs:\n" + str(gnn_model.get_config()))
     logger.info("Trained FFNN, with configs:\n" + str(ffnn_model.get_config()))
