@@ -183,7 +183,22 @@ def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: 
 
 
 def balance_classes(x_train, y_train):
-    smt = SMOTENC(random_state=42, categorical_features=['protein_name', 'residue_name'])
+    logger.debug("x_train: " + str(x_train))
+    logger.debug("y_train: " + str(y_train))
+    num_of_ones = len(list(filter(lambda x: x == 1, y_train)))
+    num_of_zeros = len(list(filter(lambda x: x == 0, y_train)))
+    logger.debug("num of ones: " + str(num_of_ones))
+    logger.debug("num of zeros: " + str(num_of_zeros))
+
+    if num_of_ones <= 1 or num_of_zeros <= 1:
+        return x_train, y_train
+
+    if num_of_ones > num_of_zeros and num_of_zeros < 5:
+        smt = SMOTENC(random_state=42, categorical_features=['protein_name', 'residue_name'], k_neighbors=num_of_zeros-1)
+    elif num_of_zeros > num_of_ones and num_of_ones < 5:
+        smt = SMOTENC(random_state=42, categorical_features=['protein_name', 'residue_name'], k_neighbors=num_of_ones-1)
+    else:
+        smt = SMOTENC(random_state=42, categorical_features=['protein_name', 'residue_name'])
     x_res, y_res = smt.fit_resample(x_train, y_train)
     return x_res, y_res
 

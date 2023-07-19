@@ -107,7 +107,6 @@ def compute_interacting_interface_for_single_file(pdb_path: str, pdb_parser: PDB
     p1_interface = set()
 
     for atom in p2_heavy_atoms:
-        logger.debug(str(type(interaction_distance)) + " " + str(interaction_distance))
         nb_list = p1_tree.search(atom.coord, interaction_distance, "R")
         p1_interface = p1_interface.union(nb_list)
 

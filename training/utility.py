@@ -8,17 +8,17 @@ logger = utility.default_logger(__file__)
 
 
 def f1_m(y_true, y_pred):
-    logger.debug('true: ' + y_true)
-    logger.debug('pred: ' + y_pred)
+    logger.debug('true: ' + str(y_true))
+    logger.debug('pred: ' + str(y_pred))
 
     max_value = tf.math.reduce_max(y_pred)
     max_value_true = tf.math.reduce_max(y_true)
 
-    logger.debug('max-value-predicted: ' + max_value)
+    logger.debug('max-value-predicted: ' + str(max_value))
     logger.debug('max-value-true: ' + str(max_value_true))
 
     y_pred = tf.math.greater(y_pred, tf.constant([0.5], dtype=tf.float32))
-    logger.debug('thresholded-pred: ' + y_pred)
+    logger.debug('thresholded-pred: ' + str(y_pred))
 
     precision_metric = tf.keras.metrics.Precision()
     precision_metric.update_state(y_true, y_pred)
@@ -31,7 +31,7 @@ def f1_m(y_true, y_pred):
     return 2*((precision*recall)/(precision+recall+tf.keras.backend.epsilon()))
 
 
-def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_train=None):
+def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_train=None, validation_data=None):
     if os.path.exists(f'data/models/{model_name}/weights.tf'):
         model.load_weights(f'data/models/{model_name}/weights.tf', save_format='tf')
     model.compile(optimizer='adam', loss='mse', metrics=[f1_m], run_eagerly=True )
@@ -39,11 +39,16 @@ def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_trai
     if y_train is None:
         from spektral.data.loaders import SingleLoader
         loader = SingleLoader(x_train)
+        loader_validation = SingleLoader(validation_data)
         #model.fit(loader.load(), steps_per_epoch=100, epochs=100, batch_size=x_train.size(), use_multiprocessing=True, verbose=1) #change epochs to around 7000
-        model.fit(loader.load(), steps_per_epoch=10, epochs=10, batch_size=x_train.size(), use_multiprocessing=True,
-                  verbose=1)
+        res = model.fit(loader.load(), steps_per_epoch=10, epochs=10, batch_size=x_train.size(), use_multiprocessing=True,
+                  verbose=1, validation_data=loader_validation.load(), validation_steps=10)
     else:
-        model.fit(x=x_train, y=y_train, epochs=100, batch_size=len(x_train), use_multiprocessing=True, verbose=1)
+        res = model.fit(x=x_train, y=y_train, epochs=100, batch_size=len(x_train), use_multiprocessing=True, verbose=1, validation_data=validation_data, validation_steps=10)
+
+    if res:
+        logger.info("History model name: " + str(model_name) + " History: " + str(res.history))
+
 
     if not os.path.exists(f'data/models/{model_name}'):
         os.makedirs(f'data/models/{model_name}')
