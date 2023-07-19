@@ -3,6 +3,7 @@ from typing import Any
 import tensorflow as tf
 from Bio.PDB import PDBParser
 from imblearn.over_sampling import SMOTENC
+from typing import Union
 
 def is_hetero(res):
     return res.get_full_id()[3][0] != ' '
@@ -116,7 +117,7 @@ def extract_data(dataset_file_name: str) -> list[tuple[str, int, str, float, flo
     return out
 
 
-def to_one_hot_encoding_input(input_vector: list[tuple[str, int, str]], different_residue_names_index) -> tuple[list[list[int]], dict[str, int]]:
+def to_one_hot_encoding_input(input_vector: list[tuple[str, int, str]], different_residue_names_index, expected_results=None) -> tuple[list[list[int]], dict[str, int], Union[list[list[int]], None]]:
     # process input
     different_protein_names_index = dict()
     for index, (protein_name, _, _) in enumerate(input_vector):
@@ -127,19 +128,37 @@ def to_one_hot_encoding_input(input_vector: list[tuple[str, int, str]], differen
 
     residue_name_zero_vector = [0] * amount_different_residue_names
 
+    if expected_results is not None:
+        new_expected_results = []
+
+    last_index = 0
+    protein_index = dict()
     input_one_hot_encoding = []
     for index, (protein_name, residue_id, residue_name) in enumerate(input_vector):
-        residue_name_one_hot_encoding = residue_name_zero_vector.copy()
+        if protein_name not in protein_index.keys():
+            protein_index[protein_name] = last_index
+            last_index += 1
+            input_one_hot_encoding.append([])
+            if expected_results is not None:
+                new_expected_results.append([])
 
-        protein_id = 0
+        residue_name_one_hot_encoding = residue_name_zero_vector.copy()
 
         if not (protein_name == 0 and residue_id == 0 and residue_name == 0):
             residue_name_one_hot_encoding[different_residue_names_index[residue_name]] = 1
-            protein_id = different_protein_names_index[protein_name]
 
-        input_one_hot_encoding.append([protein_id] + [residue_id] + residue_name_one_hot_encoding)
+        input_one_hot_encoding[protein_index[protein_name]].append(residue_name_one_hot_encoding)
 
-    return input_one_hot_encoding, different_residue_names_index
+        if expected_results is not None:
+            new_expected_results[protein_index[protein_name]].append(expected_results[index])
+
+    if expected_results is not None:
+        expected_results = new_expected_results
+
+    logger.debug("input_one_hot_encoding: " + str(input_one_hot_encoding))
+    logger.debug("expected_results: " + str(expected_results))
+
+    return input_one_hot_encoding, different_residue_names_index, expected_results
 
 
 def to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features: dict[str, dict[str, float]],

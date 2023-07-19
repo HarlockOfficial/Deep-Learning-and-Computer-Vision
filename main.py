@@ -48,19 +48,20 @@ def preprocessing_rnn_gnn(pdb_path: str, interaction_distance: float = 6.0, outp
 
     aminoacid_list = [x[0: 3] for x in extract_data.values.tolist()]
     del distance_matrix
-    input_one_hot_encoding, different_residue_names_index = utility.to_one_hot_encoding_input(
-        aminoacid_list, different_residue_names_index)
+    input_one_hot_encoding, different_residue_names_index, expected_results = utility.to_one_hot_encoding_input(
+        aminoacid_list, different_residue_names_index, expected_results)
 
     import neural_network.utility.gcn_dataset as gcn_dataset
     import numpy as np
 
-    input_tensor = tf.convert_to_tensor(value=input_one_hot_encoding, dtype=tf.float32)
+    for index, value in enumerate(input_one_hot_encoding):
+        input_tensor = tf.convert_to_tensor(value=value, dtype=tf.float32)
 
-    dataset = gcn_dataset.MyDataset(input_tensor.numpy(), contact_matrix.numpy(), np.array(expected_results))
+        dataset = gcn_dataset.MyDataset(input_tensor.numpy(), contact_matrix[index].numpy(), np.array(expected_results[index]))
 
-    logger.debug("Expected results: " + str(expected_results))
+        logger.debug("Expected results: " + str(expected_results[index]))
 
-    return aminoacid_list, expected_results, input_one_hot_encoding, contact_matrix, different_protein_names_index, different_residue_names_index, dataset, aminoacid_list
+        yield aminoacid_list, expected_results, input_one_hot_encoding, contact_matrix, different_protein_names_index, different_residue_names_index, dataset, aminoacid_list
 
 
 def preprocess_chemical_features(chemical_features_path: str, output_path: str = None):
@@ -75,95 +76,95 @@ def preprocess_chemical_features(chemical_features_path: str, output_path: str =
 
 def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, chemical_features=None, output_path=None, different_protein_names_index=None, different_residue_names_index=None, pdb_validation_path=None):
     logger.info("Obtaining preprocessed data")
-    preprocessed_rnn_data, expected_results, preprocessed_gnn_data, contact_matrix, \
-        different_protein_names_index, different_residue_names_index, dataset, aminoacid_list = preprocessing_rnn_gnn(
-        pdb_path, interaction_distance, output_path, different_protein_names_index, different_residue_names_index)
+    for preprocessed_rnn_data, expected_results, preprocessed_gnn_data, contact_matrix, \
+        different_protein_names_index, different_residue_names_index, dataset, aminoacid_list in preprocessing_rnn_gnn(
+        pdb_path, interaction_distance, output_path, different_protein_names_index, different_residue_names_index):
 
-    validation_rnn_data, validation_expected_results, validation_gnn_data, validation_contact_matrix, \
-        validation_different_protein_names_index, validation_different_residue_names_index, validation_dataset, validation_aminoacid_list = preprocessing_rnn_gnn(pdb_validation_path, interaction_distance, output_path, different_protein_names_index, different_residue_names_index)
+        for validation_rnn_data, validation_expected_results, validation_gnn_data, validation_contact_matrix, \
+            validation_different_protein_names_index, validation_different_residue_names_index, validation_dataset, validation_aminoacid_list in preprocessing_rnn_gnn(pdb_validation_path, interaction_distance, output_path, different_protein_names_index, different_residue_names_index):
 
-    logger.debug("Preprocessed data length (using only one of the data since they're identical)" + str(len(preprocessed_rnn_data[0])))
-    logger.info("Obtaining preprocessed chemical features")
+            logger.debug("Preprocessed data length (using only one of the data since they're identical)" + str(len(preprocessed_rnn_data[0])))
+            logger.info("Obtaining preprocessed chemical features")
 
-    if chemical_features is None:
-        preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)
-    else:
-        preprocessed_chemical_features = chemical_features
+            if chemical_features is None:
+                preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)
+            else:
+                preprocessed_chemical_features = chemical_features
 
-    logger.info("Assuming all data have same length")
-    logger.debug(len(expected_results))
-    logger.debug(str(expected_results))
-    assert len(preprocessed_rnn_data) == len(preprocessed_gnn_data) == len(expected_results)
+            logger.info("Assuming all data have same length")
+            logger.debug(len(expected_results))
+            logger.debug(str(expected_results))
+            assert len(preprocessed_rnn_data) == len(preprocessed_gnn_data) == len(expected_results)
 
-    logger.info("Training the RNN")
+            logger.info("Training the RNN")
 
-    #print(str(preprocessed_rnn_data), str(expected_results), str(len(preprocessed_rnn_data)),
-    #      str(len(expected_results)))
-    #input('------------------------------------------------------------------')
+            #print(str(preprocessed_rnn_data), str(expected_results), str(len(preprocessed_rnn_data)),
+            #      str(len(expected_results)))
+            #input('------------------------------------------------------------------')
 
-    #input('------------------------------------------------------------------')
-    #print(str(preprocessed_rnn_data), str(expected_results), str(len(preprocessed_rnn_data)), str(len(expected_results)))
-    #input('------------------------------------------------------------------')
+            #input('------------------------------------------------------------------')
+            #print(str(preprocessed_rnn_data), str(expected_results), str(len(preprocessed_rnn_data)), str(len(expected_results)))
+            #input('------------------------------------------------------------------')
 
-    preprocessed_rnn_data, _ = utility.to_one_hot_encoding_input(preprocessed_rnn_data, different_residue_names_index)
-    validation_rnn_data, _ = utility.to_one_hot_encoding_input(validation_rnn_data, validation_different_residue_names_index)
-    tensor_pre_array = tf.convert_to_tensor(preprocessed_rnn_data)
-    tensor_exp_array = tf.convert_to_tensor(expected_results)
+            preprocessed_rnn_data, _, _ = utility.to_one_hot_encoding_input(preprocessed_rnn_data, different_residue_names_index)
+            validation_rnn_data, _, _ = utility.to_one_hot_encoding_input(validation_rnn_data, validation_different_residue_names_index)
+            tensor_pre_array = tf.convert_to_tensor(preprocessed_rnn_data)
+            tensor_exp_array = tf.convert_to_tensor(expected_results)
 
-    """from dotenv import load_dotenv
-    load_dotenv()
-    import os
-    """
-    rnn_model = training.recurrent_network. \
-        train_recurrent_network(len(expected_results) if len(expected_results) > len(validation_expected_results) \
-                                                else len(validation_expected_results), tensor_pre_array, tensor_exp_array, \
-                                                validation_data=(tf.convert_to_tensor(validation_rnn_data), tf.convert_to_tensor(validation_expected_results)))
-        #train_recurrent_network(len(expected_results), tensor_pre_array, tensor_exp_array)
+            """from dotenv import load_dotenv
+            load_dotenv()
+            import os
+            """
+            rnn_model = training.recurrent_network. \
+                train_recurrent_network(len(expected_results) if len(expected_results) > len(validation_expected_results) \
+                                                        else len(validation_expected_results), tensor_pre_array, tensor_exp_array, \
+                                                        validation_data=(tf.convert_to_tensor(validation_rnn_data), tf.convert_to_tensor(validation_expected_results)))
+                #train_recurrent_network(len(expected_results), tensor_pre_array, tensor_exp_array)
 
-    logger.info("Training the GCN")
-    gnn_model = training.graph_convolutional_network. \
-        train_graph_convolutional_network(1, dataset, validation_data=validation_dataset)
-        #train_graph_convolutional_network(int(os.getenv('MAX_INPUT')), dataset)
-        #train_graph_convolutional_network(len(expected_results), dataset)
+            logger.info("Training the GCN")
+            gnn_model = training.graph_convolutional_network. \
+                train_graph_convolutional_network(1, dataset, validation_data=validation_dataset)
+                #train_graph_convolutional_network(int(os.getenv('MAX_INPUT')), dataset)
+                #train_graph_convolutional_network(len(expected_results), dataset)
 
-    logger.info("Predicting RNN results")
-    rnn_result = rnn_model.predict(preprocessed_rnn_data, batch_size=len(preprocessed_rnn_data))
-    logger.debug(rnn_result)
-    logger.info("Predicting GCN results")
-    gnn_tensor_input = tf.convert_to_tensor(preprocessed_gnn_data, dtype=tf.float32)
-    logger.debug(gnn_tensor_input)
-    logger.debug(contact_matrix)
-    gnn_result = gnn_model.predict(x=[gnn_tensor_input.numpy(), tf.cast(contact_matrix, dtype=tf.float32).numpy()], batch_size=len(preprocessed_gnn_data))
+            logger.info("Predicting RNN results")
+            rnn_result = rnn_model.predict(preprocessed_rnn_data, batch_size=len(preprocessed_rnn_data))
+            logger.debug(rnn_result)
+            logger.info("Predicting GCN results")
+            gnn_tensor_input = tf.convert_to_tensor(preprocessed_gnn_data, dtype=tf.float32)
+            logger.debug(gnn_tensor_input)
+            logger.debug(contact_matrix)
+            gnn_result = gnn_model.predict(x=[gnn_tensor_input.numpy(), tf.cast(contact_matrix, dtype=tf.float32).numpy()], batch_size=len(preprocessed_gnn_data))
 
-    logger.debug(f"{rnn_result}\n\n{gnn_result}\n\n{preprocessed_chemical_features}")
+            logger.debug(f"{rnn_result}\n\n{gnn_result}\n\n{preprocessed_chemical_features}")
 
-    input_vector = utility.to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features, aminoacid_list)
+            input_vector = utility.to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features, aminoacid_list)
 
-    logger.info("Predicting RNN validation results")
-    validation_rnn_result = rnn_model.predict(validation_rnn_data, batch_size=len(validation_rnn_data))
-    logger.debug(validation_rnn_result)
-    logger.info("Predicting GCN validation results")
-    validation_gnn_tensor_input = tf.convert_to_tensor(validation_gnn_data, dtype=tf.float32)
-    logger.debug(validation_gnn_tensor_input)
-    logger.debug(validation_contact_matrix)
-    validation_gnn_result = gnn_model.predict(x=[validation_gnn_tensor_input.numpy(), tf.cast(validation_contact_matrix, dtype=tf.float32).numpy()],
-                                   batch_size=len(validation_gnn_data))
+            logger.info("Predicting RNN validation results")
+            validation_rnn_result = rnn_model.predict(validation_rnn_data, batch_size=len(validation_rnn_data))
+            logger.debug(validation_rnn_result)
+            logger.info("Predicting GCN validation results")
+            validation_gnn_tensor_input = tf.convert_to_tensor(validation_gnn_data, dtype=tf.float32)
+            logger.debug(validation_gnn_tensor_input)
+            logger.debug(validation_contact_matrix)
+            validation_gnn_result = gnn_model.predict(x=[validation_gnn_tensor_input.numpy(), tf.cast(validation_contact_matrix, dtype=tf.float32).numpy()],
+                                           batch_size=len(validation_gnn_data))
 
-    logger.debug(f"{validation_rnn_result}\n\n{validation_gnn_result}\n\n{preprocessed_chemical_features}")
-    validation_vector = utility.to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features, validation_aminoacid_list)
+            logger.debug(f"{validation_rnn_result}\n\n{validation_gnn_result}\n\n{preprocessed_chemical_features}")
+            validation_vector = utility.to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features, validation_aminoacid_list)
 
-    logger.info("Training the FFN")
-    logger.info("Preprocessed FNN data length " + str(len(input_vector[0])))
+            logger.info("Training the FFN")
+            logger.info("Preprocessed FNN data length " + str(len(input_vector[0])))
 
-    '''
-     Since 1 neuron is createrd for each input, using the len of the expected results as output creates a matrix
-     we actually need one predicition for each neuron. 
-    '''
+            '''
+             Since 1 neuron is createrd for each input, using the len of the expected results as output creates a matrix
+             we actually need one predicition for each neuron. 
+            '''
 
-    ffnn_model = training.feed_forward_network. \
-        train_feed_forward_network(1, [np.array(rnn_result), np.array(gnn_result), np.array(input_vector)], np.array(expected_results), validation_data=((np.array(validation_rnn_result), np.array(validation_gnn_result), np.array(validation_vector)), np.array(validation_expected_results)))
-        #train_feed_forward_network(len(expected_results), input_vector, expected_results)
-    logger.info("Training finished")
+            ffnn_model = training.feed_forward_network. \
+                train_feed_forward_network(1, [np.array(rnn_result), np.array(gnn_result), np.array(input_vector)], np.array(expected_results), validation_data=((np.array(validation_rnn_result), np.array(validation_gnn_result), np.array(validation_vector)), np.array(validation_expected_results)))
+                #train_feed_forward_network(len(expected_results), input_vector, expected_results)
+            logger.info("Training finished")
 
     return rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list, preprocessed_chemical_features
 
@@ -251,7 +252,7 @@ if __name__ == "__main__":
     for index, x in enumerate(ordered_names_list):
         different_residue_names_index[x] = index
 
-    rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list, \
+    rnn_model, gnn_model, ffnn_model, _, different_residue_names_index, _, \
     preprocess_chemical_features = train_whole_network_on_a_file(args.pdb_path, args.chemical_features_path,
                                                                  args.interaction_distance, args.output,
                                                                  different_residue_names_index=different_residue_names_index)
