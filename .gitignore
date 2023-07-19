@@ -8,6 +8,9 @@
 !/data/preprocessing/selected_features.txt
 !/data/models/**
 !/data/features/
+/data/validation/*
+!/data/validation/.gitkeep
+
 # Created by https://www.toptal.com/developers/gitignore/api/python,pythonvanilla,pycharm+all,jetbrains+all,visualstudiocode,venv,virtualenv,macos,windows,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,pythonvanilla,pycharm+all,jetbrains+all,visualstudiocode,venv,virtualenv,macos,windows,linux
 

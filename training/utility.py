@@ -44,10 +44,10 @@ def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_trai
         res = model.fit(loader.load(), steps_per_epoch=10, epochs=10, batch_size=x_train.size(), use_multiprocessing=True,
                   verbose=1, validation_data=loader_validation.load(), validation_steps=10)
     else:
-        res = model.fit(x=x_train, y=y_train, epochs=100, batch_size=len(x_train), use_multiprocessing=True, verbose=1, validation_data=validation_data, validation_steps=10)
+       res = model.fit(x=x_train, y=y_train, epochs=100, batch_size=len(x_train), use_multiprocessing=True, verbose=1, validation_data=validation_data, validation_steps=10)
 
     if res:
-        logger.info("History model name: " + str(model_name) + " History: " + str(res.history))
+        logger.debug("History model name: " + str(model_name) + " History: " + str(res.history))
 
 
     if not os.path.exists(f'data/models/{model_name}'):

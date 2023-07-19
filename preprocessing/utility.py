@@ -150,8 +150,6 @@ def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: 
     for element_list in rnn_result:
         ffnn_input_vector_one_hot_encoding.append([float(x) for x in element_list])
 
-    print(len(rnn_result))
-    print(len(gnn_result))
     for index, element in enumerate(rnn_result):
         ffnn_input_vector_one_hot_encoding[index].extend([float(x) for x in gnn_result[index]])
 
@@ -162,11 +160,12 @@ def to_one_hot_encoding_input_for_ffnn(rnn_result: list[list[int]], gnn_result: 
             feature_value = feature_dict[aminoacid_name]
             ffnn_input_vector_one_hot_encoding[index].append(feature_value)
 
-            """if aminoacid_name == 0:
-                feature_value = 0.0
-            else:
-                feature_value = feature_dict[aminoacid_name]
-            ffnn_input_vector_one_hot_encoding[index].append(feature_value)
+    """
+    if aminoacid_name == 0:
+        feature_value = 0.0
+    else:
+        feature_value = feature_dict[aminoacid_name]
+    ffnn_input_vector_one_hot_encoding[index].append(feature_value)
 
     
     from dotenv import load_dotenv
