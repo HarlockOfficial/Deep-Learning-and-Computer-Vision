@@ -4,7 +4,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import main
 import preprocessing.utility as utility
 import tensorflow as tf
-
+import random
 logger = utility.default_logger(__file__)
 
 
@@ -30,14 +30,18 @@ def train(pdb_folder_path: str, chemical_features_path: str, interaction_distanc
     for pdb_file in os.listdir(pdb_folder_path):
         if pdb_file.endswith(".pdb"):
             pdb_path = pdb_folder_path + "/" + pdb_file
-            for validation_pdb_file in os.listdir(validation_pdb_folder):
+            while True:
+                validation_pdb_file = random.choice(os.listdir(validation_pdb_folder))
+
                 if validation_pdb_file.endswith(".pdb"):
-                    pdb_validation_path = validation_pdb_folder + "/" + validation_pdb_file
-                    logger.info("Training for file: " + pdb_path)
-                    logger.info("Validation for file: " + pdb_validation_path)
-                    _, _, _, _, _, \
-                    _, preprocessed_chemical_features = main.train_whole_network_on_a_file(pdb_path, chemical_features_path, interaction_distance, preprocessed_chemical_features, output_path,
-                                          different_residue_names_index = different_residue_names_index, pdb_validation_path=pdb_validation_path)
+                    break
+
+            pdb_validation_path = validation_pdb_folder + "/" + validation_pdb_file
+            logger.info("Training for file: " + pdb_path)
+            logger.info("Validation for file: " + pdb_validation_path)
+            _, _, _, _, _, \
+            _, preprocessed_chemical_features = main.train_whole_network_on_a_file(pdb_path, chemical_features_path, interaction_distance, preprocessed_chemical_features, output_path,
+                                  different_residue_names_index = different_residue_names_index, pdb_validation_path=pdb_validation_path)
             logger.info("Training for file: " + pdb_path + " finished")
 
 

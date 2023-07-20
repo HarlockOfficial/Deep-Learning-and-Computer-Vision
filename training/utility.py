@@ -46,7 +46,7 @@ def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_trai
         res = model.fit(loader.load(), steps_per_epoch=100, epochs=100, batch_size=x_train.size(), use_multiprocessing=True,
                   verbose=1, validation_data=loader_validation.load(), validation_steps=100)
     else:
-       res = model.fit(x=x_train, y=y_train, epochs=100, batch_size=len(x_train), use_multiprocessing=True, verbose=1, validation_data=validation_data, validation_steps=100)
+       result = model.fit(x=x_train, y=y_train, epochs=int(os.getenv('TRAIN_STEPS')), batch_size=len(x_train), use_multiprocessing=True, verbose=1, validation_data=validation_data, validation_steps=int(os.getenv('TRAIN_STEPS')), steps_per_epoch=int(os.getenv('TRAIN_STEPS')))
 
     logger.debug("Model summary: ")
     model.summary(print_fn=logger.debug)
@@ -126,7 +126,6 @@ def test_network(model: tf.keras.models.Model, model_name: str, x_test, y_test=N
             model.compile(optimizer='adam', loss='mse', metrics=[f1_m], run_eagerly=True)
             model.evaluate(loader.load())
             model.set_weights(weights)
-
 
     if y_test is None:
         from spektral.data.loaders import SingleLoader
