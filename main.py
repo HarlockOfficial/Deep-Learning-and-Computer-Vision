@@ -2,7 +2,6 @@ import random
 
 import numpy as np
 import tensorflow as tf
-from numpy import float32
 
 import preprocessing
 import preprocessing.utility as utility
@@ -204,35 +203,44 @@ def test_whole_network_on_a_file(pdb_path, chemical_features_path, interaction_d
 
         logger.info("Testing the RNN")
 
-    tensor_pre_array = tf.convert_to_tensor(preprocessed_rnn_data)
-    tensor_exp_array = tf.convert_to_tensor(expected_results)
+        from dotenv import load_dotenv
+        load_dotenv()
+        import os
 
-    rnn_model, rnn_result = training.recurrent_network. \
-        test_recurrent_network(len(expected_results), tensor_pre_array, tensor_exp_array)
-    logger.info("RNN result: " + str(rnn_result))
-    logger.info("Training the GCN")
-    gnn_model, gnn_result = training.graph_convolutional_network. \
-        test_graph_convolutional_network(len(expected_results), dataset)
-    logger.info("GCN result: " + str(gnn_result))
+        if len(preprocessed_rnn_data[0]) == 3:
+            preprocessed_rnn_data, _ = utility.to_one_hot_encoding_input(preprocessed_rnn_data, different_residue_names_index)
 
-    logger.info("Predicting RNN results")
-    rnn_result = rnn_model.predict(preprocessed_rnn_data, batch_size=len(preprocessed_rnn_data))
-    logger.info("Predicting GCN results")
-    logger.debug(rnn_result)
-    logger.debug(preprocessed_gnn_data)
-    logger.debug(contact_matrix)
-    gnn_result = gnn_model.predict(x=[preprocessed_gnn_data.numpy(), contact_matrix.numpy()],
-                                   batch_size=len(preprocessed_gnn_data))
+        tensor_pre_array = tf.convert_to_tensor(preprocessed_rnn_data)
+        tensor_exp_array = tf.convert_to_tensor(expected_results)
 
-    logger.debug(f"{rnn_result}\n\n{gnn_result}\n\n{preprocessed_chemical_features}")
+        rnn_model, rnn_result = training.recurrent_network. \
+            test_recurrent_network(int(os.getenv('MAX_INPUT')), tensor_pre_array, tensor_exp_array)
+        logger.info("RNN result: " + str(rnn_result))
+        logger.info("Training the GCN")
+        gnn_model, gnn_result = training.graph_convolutional_network. \
+            test_graph_convolutional_network(1, dataset)
+        logger.info("GCN result: " + str(gnn_result))
 
-    input_vector = utility.to_one_hot_encoding_input_for_ffnn(rnn_result, gnn_result, preprocessed_chemical_features,
-                                                              aminoacid_list)
+        logger.info("Predicting RNN results")
+        rnn_result = rnn_model.predict(preprocessed_rnn_data, batch_size=len(preprocessed_rnn_data))
+        logger.info("Predicting GCN results")
+        logger.debug(rnn_result)
+        logger.debug(preprocessed_gnn_data)
+        logger.debug(contact_matrix)
+        gnn_tensor_input = tf.convert_to_tensor(preprocessed_gnn_data, dtype=tf.float32)
+        contact_matrix_tensor = tf.cast(contact_matrix, dtype=tf.float32)
+        gnn_result = gnn_model.predict(x=[gnn_tensor_input.numpy(), contact_matrix_tensor.numpy()],
+                                       batch_size=len(preprocessed_gnn_data))
 
-    logger.info("Testing the FFN")
-    ffnn_model = training.feed_forward_network. \
-        test_feed_forward_network(len(expected_results), input_vector, expected_results)
-    logger.info("Training finished")
+        logger.debug(f"{rnn_result}\n\n{gnn_result}\n\n{preprocessed_chemical_features}")
+
+        input_vector = utility.to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features,
+                                                                  aminoacid_list)
+
+        logger.info("Testing the FFN")
+        ffnn_model, ffn_results = training.feed_forward_network. \
+            test_feed_forward_network(1, [np.array(rnn_result), np.array(gnn_result), np.array(input_vector)], np.array(expected_results))
+        logger.info("Training finished")
 
     return rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list, preprocessed_chemical_features
 

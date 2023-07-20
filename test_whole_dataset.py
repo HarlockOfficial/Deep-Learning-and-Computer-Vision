@@ -10,7 +10,7 @@ def test(pdb_folder_path: str, chemical_features_path: str, interaction_distance
     """
         For each pdb file in the pdb folder, it will train the model.
     """
-    logger.info("Starting the training")
+    logger.info("Starting the testing")
 
     if output_path is not None:
         if not os.path.exists(output_path):
