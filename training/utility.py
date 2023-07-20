@@ -43,12 +43,13 @@ def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_trai
         loader = SingleLoader(x_train)
         loader_validation = SingleLoader(validation_data)
         #model.fit(loader.load(), steps_per_epoch=100, epochs=100, batch_size=x_train.size(), use_multiprocessing=True, verbose=1) #change epochs to around 7000
-        res = model.fit(loader.load(), steps_per_epoch=10, epochs=10, batch_size=x_train.size(), use_multiprocessing=True,
-                  verbose=1, validation_data=loader_validation.load(), validation_steps=10)
+        res = model.fit(loader.load(), steps_per_epoch=100, epochs=100, batch_size=x_train.size(), use_multiprocessing=True,
+                  verbose=1, validation_data=loader_validation.load(), validation_steps=100)
     else:
-       res = model.fit(x=x_train, y=y_train, epochs=100, batch_size=len(x_train), use_multiprocessing=True, verbose=1, validation_data=validation_data, validation_steps=10)
+       res = model.fit(x=x_train, y=y_train, epochs=100, batch_size=len(x_train), use_multiprocessing=True, verbose=1, validation_data=validation_data, validation_steps=100)
 
-    logger.debug("Model summary: " + str(model.summary()))
+    logger.debug("Model summary: ")
+    model.summary(print_fn=logger.debug)
 
     if res:
         logger.debug("History model name: " + str(model_name) + " History: " + str(res.history))

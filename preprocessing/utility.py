@@ -61,11 +61,8 @@ def default_logger(file):
 
 def get_residue_name_and_protein_name(residue, chain, dataset_file_name, logger):
     residue_name = residue.get_resname()
-    logger.debug("residue name: " + str(residue_name))
     protein_name = chain.get_id()
-    logger.debug("protein name: " + str(protein_name))
     residue_id = residue.get_full_id()[3][1]
-    logger.debug("residue id: " + str(residue_id))
     return residue_name, residue_id, protein_name
 
 
@@ -93,7 +90,6 @@ def extract_data(dataset_file_name: str) -> list[tuple[str, int, str, float, flo
     for chain in structure.get_chains():
         logger.debug("processing chain: " + str(chain))
         for residue in chain:
-            logger.debug("processing residue: " + str(residue))
             if is_hetero(residue):
                 logger.debug("skipping residue couse it's heteroatm: " + str(residue))
                 continue
@@ -101,7 +97,6 @@ def extract_data(dataset_file_name: str) -> list[tuple[str, int, str, float, flo
                 logger.debug("skipping residue: " + str(residue))
                 continue
             center_of_mass = residue.center_of_mass()
-            logger.debug("center of mass: " + str(center_of_mass))
             residue_name, residue_id, protein_name = get_residue_name_and_protein_name(residue, chain,
                                                                                        dataset_file_name, logger)
             out.append(
@@ -120,23 +115,16 @@ def extract_data(dataset_file_name: str) -> list[tuple[str, int, str, float, flo
     return out
 
 
-def to_one_hot_encoding_input(input_vector: list[tuple[str, int, str]], different_residue_names_index) -> \
+def to_one_hot_encoding_input(input_vector: list[tuple[str, int, str]], different_residue_names_index: dict[str, int]) -> \
         tuple[list[list[int]], dict[str, int]]:
-    # process input
-    different_protein_names_index = dict()
-    for index, (protein_name, _, _) in enumerate(input_vector):
-        if protein_name not in different_protein_names_index:
-            different_protein_names_index[protein_name] = len(different_protein_names_index)
-
     amount_different_residue_names = len(different_residue_names_index.keys())
-
     residue_name_zero_vector = [0] * amount_different_residue_names
 
     input_one_hot_encoding = []
     for index, (protein_name, residue_id, residue_name) in enumerate(input_vector):
         residue_name_one_hot_encoding = residue_name_zero_vector.copy()
 
-        if not (protein_name == 0 and residue_id == 0 and residue_name == 0):
+        if residue_name != 0:
             residue_name_one_hot_encoding[different_residue_names_index[residue_name]] = 1
 
         input_one_hot_encoding.append(residue_name_one_hot_encoding)
@@ -228,7 +216,7 @@ def split_data(extract_data: pd.DataFrame, expected_results: pd.DataFrame):
 
     for i, element_row in extract_data.iterrows():
         new_extract_data[protein_name_index[element_row['protein_name']]].append(element_row.to_list())
-        new_expected_results[protein_name_index[element_row['protein_name']]].append(expected_results.iloc[i])
+        new_expected_results[protein_name_index[element_row['protein_name']]].append(expected_results[i])
 
     logger.debug("new_extract_data: " + str(new_extract_data))
     logger.debug("new_expected_results: " + str(new_expected_results))
