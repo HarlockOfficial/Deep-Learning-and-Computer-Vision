@@ -48,10 +48,15 @@ def extract_data(path_to_log: str, training: bool = False, testing: bool = False
                 if training:
                     if model_name not in extracted_data.keys():
                         extracted_data[model_name] = ([], [], [], [])
-                    average_loss = sum(history['loss']) / len(history['loss'])
-                    average_f1_m = sum(history['f1_m']) / len(history['f1_m'])
-                    average_val_loss = sum(history['val_loss']) / len(history['val_loss'])
-                    average_val_f1_m = sum(history['val_f1_m']) / len(history['val_f1_m'])
+                    try:
+                        average_loss = sum(history['loss']) / len(history['loss'])
+                        average_f1_m = sum(history['f1_m']) / len(history['f1_m'])
+                        average_val_loss = sum(history['val_loss']) / len(history['val_loss'])
+                        average_val_f1_m = sum(history['val_f1_m']) / len(history['val_f1_m'])
+                    except:
+                        print("Error in the log file")
+                        print(history)
+                        continue
                     extracted_data[model_name][2].append(average_val_loss)
                     extracted_data[model_name][3].append(average_val_f1_m)
                 if testing:
@@ -78,12 +83,13 @@ def plot_data(extracted_data: Union[dict[str, tuple[list[float], list[float], li
         plt.ylabel("History")
         plt.plot(epochs, history[0], label='loss')
         plt.plot(epochs, history[1], label='f1_m')
+        folder = 'train' if len(history) == 4 else 'test'
         if len(history) == 4:
             plt.plot(epochs, history[2], label='val_loss')
             plt.plot(epochs, history[3], label='val_f1_m')
         plt.legend()
         if save:
-            plt.savefig(path_to_save + model_name + '.png')
+            plt.savefig(path_to_save + folder + "\\" + model_name + '.png')
         if show:
             plt.show()
 
