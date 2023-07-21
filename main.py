@@ -81,6 +81,59 @@ def preprocess_chemical_features(chemical_features_path: str, output_path: str =
     return preprocessed_chemical_features
 
 
+def train_our_network_on_a_file(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, chemical_features=None, output_path=None, different_protein_names_index=None, different_residue_names_index=None, pdb_validation_path=None):
+    logger.info("Obtaining preprocessed data")
+    for preprocessed_rnn_data, expected_results, preprocessed_gnn_data, contact_matrix, \
+            _, _, _, aminoacid_list in preprocessing_rnn_gnn(
+        pdb_path, interaction_distance, output_path, different_protein_names_index, different_residue_names_index):
+
+        validation_rnn_data, validation_expected_results, validation_gnn_data, validation_contact_matrix, \
+            validation_different_protein_names_index, _, validation_dataset, validation_aminoacid_list = random.choice(
+            preprocessing_rnn_gnn(pdb_validation_path, interaction_distance, output_path, different_protein_names_index,
+                                  different_residue_names_index))
+
+        logger.debug("Preprocessed data length (using only one of the data since they're identical): " + str(
+            len(preprocessed_rnn_data[0])))
+        logger.info("Obtaining preprocessed chemical features")
+
+        if chemical_features is None:
+            preprocessed_chemical_features = preprocess_chemical_features(chemical_features_path, output_path)
+        else:
+            preprocessed_chemical_features = chemical_features
+
+        logger.info("Assuming all data have same length")
+        logger.debug(len(expected_results))
+        logger.debug(str(expected_results))
+        assert len(preprocessed_rnn_data) == len(preprocessed_gnn_data) == len(expected_results)
+
+        logger.info("Training the Network")
+
+        if len(preprocessed_rnn_data[0]) == 3:
+            preprocessed_rnn_data, _ = utility.to_one_hot_encoding_input(preprocessed_rnn_data,
+                                                                         different_residue_names_index)
+
+        if len(validation_rnn_data[0]) == 3:
+            validation_rnn_data, _ = utility.to_one_hot_encoding_input(validation_rnn_data,
+                                                                       different_residue_names_index)
+
+        tensor_pre_array = tf.convert_to_tensor(preprocessed_rnn_data)
+        tensor_exp_array = tf.convert_to_tensor(expected_results)
+
+        chemical_features = utility.to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features, aminoacid_list)
+        tensor_chem_data = tf.convert_to_tensor(chemical_features)
+
+        from dotenv import load_dotenv
+        load_dotenv()
+
+        model, result = training.our_network.train_our_network(contact_matrix.get_shape().as_list()[1], [tensor_pre_array, contact_matrix, tensor_chem_data],
+                                                               tensor_exp_array,
+                                                               validation_data=(tf.convert_to_tensor(validation_rnn_data),
+                                                                                tf.convert_to_tensor(validation_expected_results)))
+        logger.info("Training finished")
+
+    return None, None, model, different_protein_names_index, different_residue_names_index, aminoacid_list, preprocessed_chemical_features
+
+
 def train_whole_network_on_a_file(pdb_path: str, chemical_features_path: str, interaction_distance: float = 6.0, chemical_features=None, output_path=None, different_protein_names_index=None, different_residue_names_index=None, pdb_validation_path=None):
     logger.info("Obtaining preprocessed data")
     for preprocessed_rnn_data, expected_results, preprocessed_gnn_data, contact_matrix, \
@@ -216,7 +269,7 @@ def test_whole_network_on_a_file(pdb_path, chemical_features_path, interaction_d
         rnn_model, rnn_result = training.recurrent_network. \
             test_recurrent_network(int(os.getenv('MAX_INPUT')), tensor_pre_array, tensor_exp_array)
         logger.info("RNN result: " + str(rnn_result))
-        logger.info("Training the GCN")
+        logger.info("Testing the GCN")
         gnn_model, gnn_result = training.graph_convolutional_network. \
             test_graph_convolutional_network(1, dataset)
         logger.info("GCN result: " + str(gnn_result))
@@ -240,7 +293,7 @@ def test_whole_network_on_a_file(pdb_path, chemical_features_path, interaction_d
         logger.info("Testing the FFN")
         ffnn_model, ffn_results = training.feed_forward_network. \
             test_feed_forward_network(1, [np.array(rnn_result), np.array(gnn_result), np.array(input_vector)], np.array(expected_results))
-        logger.info("Training finished")
+        logger.info("Testing finished")
 
     return rnn_model, gnn_model, ffnn_model, different_protein_names_index, different_residue_names_index, aminoacid_list, preprocessed_chemical_features
 

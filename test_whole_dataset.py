@@ -35,7 +35,8 @@ def test(pdb_folder_path: str, chemical_features_path: str, interaction_distance
                 test_whole_network_on_a_file(pdb_path, chemical_features_path, interaction_distance,
                                              preprocessed_chemical_features, output_path,
                                              different_residue_names_index = different_residue_names_index)
-            logger.info("Training for file: " + pdb_path + " finished")
+            logger.info("Testing for file: " + pdb_path + " finished")
+    logger.info('Testing finished')
 
 
 if __name__ == '__main__':

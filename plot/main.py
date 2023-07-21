@@ -15,10 +15,11 @@ def clean_log(path_to_log: str, training: bool = False) -> str:
         lines = f.readlines()
     start_string = 'Starting the training' if training else 'Starting the testing'
     last_start_index = [i for i, line in enumerate(lines) if start_string in line][-1]
-
-    output_lines = lines[last_start_index:]
-
-    new_log_path = path_to_log.replace('.log', '_clean.log')
+    end_string = 'Training finished' if training else 'Testing finished'
+    last_end_index = [i for i, line in enumerate(lines) if end_string in line][-1]
+    output_lines = lines[last_start_index:last_end_index]
+    file = 'train' if training else 'test'
+    new_log_path = path_to_log.replace('.log', '_'+file+'_clean.log')
 
     with open(new_log_path, 'w') as f:
         f.writelines(output_lines)
@@ -38,6 +39,7 @@ def extract_data(path_to_log: str, training: bool = False, testing: bool = False
     extracted_data = {}
     with open(path_to_log, 'r') as f:
         for line in f:
+            plot = True
             if 'History model name:' in line:
                 splitted = line.split('History model name: ')
                 model_name = splitted[1].split(' History: ')[0]

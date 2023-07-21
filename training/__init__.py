@@ -8,3 +8,4 @@ import feed_forward_network
 import graph_attention_network
 import graph_convolutional_network
 import recurrent_network
+import our_network

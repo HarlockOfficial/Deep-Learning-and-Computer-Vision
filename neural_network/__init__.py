@@ -3,3 +3,4 @@ from .recurrent_network import RecurrentNetwork
 from .feed_forward_network import FeedForwardNetwork
 from .graph_convolutional_network import GraphConvolutionalNetwork
 from .utility.gcn_dataset import MyDataset
+from .cumulative_network import OurNetwork
