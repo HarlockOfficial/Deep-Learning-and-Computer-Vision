@@ -9,7 +9,7 @@ from spektral.layers import GCNConv, GlobalSumPool
 
 
 class OurNetwork(tf.keras.models.Model):
-    def __init__(self, contact_matrix_shape, n_label=1, n_embeddings=os.getenv('MAX_INPUT'), n_channels=16, activation='relu', output_activation='linear', use_bias=True, l2_reg=2.5e-4, dropout_rate=0.5, **kwargs):
+    def __init__(self, n_label=1, n_embeddings=os.getenv('MAX_INPUT'), n_channels=16, activation='relu', output_activation='linear', use_bias=True, l2_reg=2.5e-4, dropout_rate=0.5, **kwargs):
         super(OurNetwork, self).__init__()
 
         # regularizer
@@ -23,7 +23,7 @@ class OurNetwork(tf.keras.models.Model):
         ## input contact matrix
         ## (not put shape, since the matrix is a square matrix and
         ## depends on the number of residues)
-        input_contact_matrix = tf.keras.Input(shape=(contact_matrix_shape, ))
+        input_contact_matrix = tf.keras.Input(shape=(n_embeddings, ))
 
         # Input dense layers
         first_layer_chemical_features = tf.keras.layers.Dense(256, activation=activation, use_bias=use_bias, kernel_initializer=tf.keras.initializers.Zeros())

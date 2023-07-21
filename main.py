@@ -122,13 +122,18 @@ def train_our_network_on_a_file(pdb_path: str, chemical_features_path: str, inte
         chemical_features = utility.to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features, aminoacid_list)
         tensor_chem_data = tf.convert_to_tensor(chemical_features)
 
+        validation_pre_array = tf.convert_to_tensor(validation_rnn_data)
+        validation_exp_array = tf.convert_to_tensor(validation_expected_results)
+        validation_chemical_features = utility.to_one_hot_encoding_input_for_ffnn(preprocessed_chemical_features, validation_aminoacid_list)
+        validation_chem_data = tf.convert_to_tensor(validation_chemical_features)
+
         from dotenv import load_dotenv
         load_dotenv()
 
-        model, result = training.our_network.train_our_network(contact_matrix.get_shape().as_list()[1], [tensor_pre_array, contact_matrix, tensor_chem_data],
+        model, result = training.our_network.train_our_network([tensor_pre_array, contact_matrix, tensor_chem_data],
                                                                tensor_exp_array,
-                                                               validation_data=(tf.convert_to_tensor(validation_rnn_data),
-                                                                                tf.convert_to_tensor(validation_expected_results)))
+                                                               validation_data=([validation_pre_array, validation_contact_matrix, validation_chem_data],
+                                                                                validation_exp_array))
         logger.info("Training finished")
 
     return None, None, model, different_protein_names_index, different_residue_names_index, aminoacid_list, preprocessed_chemical_features
