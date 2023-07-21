@@ -57,15 +57,21 @@ def extract_data(path_to_log: str, training: bool = False, testing: bool = False
                         print("Error in the log file")
                         print(history)
                         continue
-                    extracted_data[model_name][2].append(average_val_loss)
-                    extracted_data[model_name][3].append(average_val_f1_m)
+                    if average_val_loss > 1 or average_val_f1_m > 1 or average_loss > 1 or average_f1_m > 1:
+                        plot = False
+                    if plot:
+                        extracted_data[model_name][2].append(average_val_loss)
+                        extracted_data[model_name][3].append(average_val_f1_m)
                 if testing:
                     if model_name not in extracted_data.keys():
                         extracted_data[model_name] = ([], [])
                     average_loss = history[0]
                     average_f1_m = history[1]
-                extracted_data[model_name][0].append(average_loss)
-                extracted_data[model_name][1].append(average_f1_m)
+                    if average_loss > 1 or average_f1_m > 1:
+                        plot = False
+                if plot:
+                    extracted_data[model_name][0].append(average_loss)
+                    extracted_data[model_name][1].append(average_f1_m)
 
     return extracted_data
 
@@ -79,8 +85,8 @@ def plot_data(extracted_data: Union[dict[str, tuple[list[float], list[float], li
         plt.figure()
         plt.title(model_name)
         epochs = [i for i in range(len(history[0]))]
-        plt.xlabel("Epochs")
-        plt.ylabel("History")
+        plt.xlabel("File number")
+        plt.ylabel("Value")
         plt.plot(epochs, history[0], label='loss')
         plt.plot(epochs, history[1], label='f1_m')
         folder = 'train' if len(history) == 4 else 'test'
