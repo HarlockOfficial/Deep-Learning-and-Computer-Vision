@@ -1,6 +1,11 @@
 import os
 
+import keras.models
+import spektral.layers
 from dotenv import load_dotenv
+
+import neural_network.cumulative_network
+
 load_dotenv()
 
 import tensorflow as tf
@@ -33,22 +38,32 @@ def f1_m(y_true, y_pred):
     return 2*((precision*recall)/(precision+recall+tf.keras.backend.epsilon()))
 
 
-def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_train=None, validation_data=None):
-    if os.path.exists(f'data/models/{model_name}/'):
-        logger.info('Loading model from file')
-        model.load_weights(f'data/models/{model_name}/weights.tf')
+def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_train=None, validation_data=None, batch_size=None):
+    if batch_size is None:
+        batch_size = len(x_train)
+    logger.info("Does save path exist?")
+    if os.path.exists('C:\\Users\\Filippo\\Projects\\Deep-Learning-and-Computer-Vision\\data\\models'):
+        if os.path.isfile('C:\\Users\\Filippo\\Projects\\Deep-Learning-and-Computer-Vision\\data\\models\\our_network.index'):
+            logger.info('Loading model from file')
+            model.build(input_shape=[tf.shape(x_train[0]), tf.shape(x_train[1]), tf.shape(x_train[2])])
+            model = model.load_weights('C:\\Users\\Filippo\\Projects\\Deep-Learning-and-Computer-Vision\\data\\models\\our_network')
+
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=[f1_m], run_eagerly=True )
 
-    logger.debug("Model name: " + str(model_name))
+    # https://keras.io/guides/serialization_and_saving/
 
+    logger.debug("Model name: " + str(model_name))
     if y_train is None:
         from spektral.data.loaders import SingleLoader
         loader = SingleLoader(x_train)
-        loader_validation = SingleLoader(validation_data, epochs=int(os.getenv('TRAIN_STEPS')))
-        result = model.fit(loader.load(), steps_per_epoch=int(os.getenv('TRAIN_STEPS')), epochs=int(os.getenv('TRAIN_STEPS')), batch_size=x_train.size(), use_multiprocessing=True,
-                  verbose=1, validation_data=loader_validation.load(), validation_steps=int(os.getenv('TRAIN_STEPS')))
+        loader_validation = SingleLoader(validation_data, epochs=10)
+        batch_size = x_train.size()
+        result = model.fit(loader.load(), steps_per_epoch=10, epochs=10, batch_size=batch_size, use_multiprocessing=True,
+                  verbose=1, validation_data=loader_validation.load(), validation_steps=10)
     else:
-       result = model.fit(x=x_train, y=y_train, epochs=int(os.getenv('TRAIN_STEPS')), batch_size=len(x_train), use_multiprocessing=True, verbose=1, validation_data=validation_data, validation_steps=int(os.getenv('TRAIN_STEPS')), steps_per_epoch=int(os.getenv('TRAIN_STEPS')))
+        logger.info("Batch size: " + str(batch_size))
+        #checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=f'data/models/{model_name}/weights.ckpt', verbose=1, save_weights_only=True)
+        result = model.fit(x=x_train, y=y_train, epochs=1, batch_size=batch_size, use_multiprocessing=True, verbose=1, steps_per_epoch=1) #TODO back to 10 epochs
 
     logger.debug("Model summary: ")
     summary_string = []
@@ -58,12 +73,11 @@ def train_network(model: tf.keras.models.Model, model_name: str, x_train, y_trai
     if result:
         logger.debug("History model name: " + str(model_name) + " History: " + str(result.history))
 
+    model.save_weights('C:\\Users\\Filippo\\Projects\\Deep-Learning-and-Computer-Vision\\data\\models\\our_network')
 
-    if not os.path.exists(f'data/models/{model_name}'):
-        os.makedirs(f'data/models/{model_name}')
-    model.save_weights(f'data/models/{model_name}/weights.tf', save_format='tf')
     return model, result
 
+# https://github.com/tensorflow/tensorflow/issues/29545#issuecomment-520062408
 
 def test_network(model: tf.keras.models.Model, model_name: str, x_test, y_test=None):
     model.load_weights(f'data/models/{model_name}/weights.tf')
@@ -71,11 +85,11 @@ def test_network(model: tf.keras.models.Model, model_name: str, x_test, y_test=N
 
     if y_test is None:
         from spektral.data.loaders import SingleLoader
-        loader = SingleLoader(x_test, epochs=int(os.getenv('TEST_STEPS')))
-        result = model.evaluate(loader.load(), steps=int(os.getenv('TEST_STEPS')), batch_size=x_test.size(),
+        loader = SingleLoader(x_test, epochs=10)
+        result = model.evaluate(loader.load(), steps=10, batch_size=x_test.size(),
                                 use_multiprocessing=True, verbose=1)  # change epochs to around 7000
     else:
-        result = model.evaluate(x=x_test, y=y_test, steps=int(os.getenv('TEST_STEPS')), batch_size=len(x_test),
+        result = model.evaluate(x=x_test, y=y_test, steps=10, batch_size=len(x_test),
                                 use_multiprocessing=True, verbose=1)
 
     if result:

@@ -22,7 +22,6 @@ def train(pdb_folder_path: str, chemical_features_path: str, interaction_distanc
                           'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER',
                           'THR', 'TRP', 'TYR', 'VAL']
 
-    preprocessed_chemical_features = None
     different_residue_names_index = dict()
     for index, x in enumerate(ordered_names_list):
         different_residue_names_index[x] = index
@@ -40,7 +39,7 @@ def train(pdb_folder_path: str, chemical_features_path: str, interaction_distanc
             logger.info("Training for file: " + pdb_path)
             logger.info("Validation for file: " + pdb_validation_path)
             _, _, _, _, _, \
-            _, preprocessed_chemical_features = main.train_our_network_on_a_file(pdb_path, chemical_features_path, interaction_distance, preprocessed_chemical_features, output_path,
+            _, _ = main.train_our_network_on_a_file(pdb_path, chemical_features_path, interaction_distance, None, output_path,
                                   different_residue_names_index = different_residue_names_index, pdb_validation_path=pdb_validation_path)
             logger.info("Training for file: " + pdb_path + " finished")
 
