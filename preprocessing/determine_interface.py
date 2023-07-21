@@ -107,7 +107,6 @@ def compute_interacting_interface_for_single_file(pdb_path: str, pdb_parser: PDB
     p1_interface = set()
 
     for atom in p2_heavy_atoms:
-        logger.debug(str(type(interaction_distance)) + " " + str(interaction_distance))
         nb_list = p1_tree.search(atom.coord, interaction_distance, "R")
         p1_interface = p1_interface.union(nb_list)
 
@@ -117,20 +116,17 @@ def compute_interacting_interface_for_single_file(pdb_path: str, pdb_parser: PDB
     for residue in p1_structure.get_residues():
         if is_hetero(residue):
             continue
-        chain_id = residue.get_full_id()[2]
-        residue_id = residue.get_full_id()[3][1]
-        residue_name = residue.get_resname()
         is_interface = 1 if residue in p1_interface else 0
         out.append(is_interface)
 
-    from dotenv import load_dotenv
+    """from dotenv import load_dotenv
     load_dotenv()
 
     for i in range(len(out), int(os.getenv('MAX_INPUT'))):
         out.append(0)
 
     logger.debug("Len out: " + str(len(out)))
-
+    """
     return out
 
 

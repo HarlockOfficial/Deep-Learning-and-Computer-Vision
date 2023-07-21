@@ -1,5 +1,6 @@
 import json
 
+import pandas
 from Bio.PDB import PDBParser
 
 import utility
@@ -8,11 +9,7 @@ import tensorflow as tf
 logger = utility.default_logger(__file__)
 
 
-def is_hetero(res):
-    return res.get_full_id()[3][0] != ' '
-
-
-def create_distance_matrix(aminoacid_mass_center: list[tuple[str, int, str, float, float, float]]) -> list[list[tuple[str, int, str, str, int, str, float]]]:
+def create_distance_matrix(aminoacid_mass_center: list[list[tuple[str, int, str, float, float, float]]]) -> list[list[tuple[str, int, str, str, int, str, float]]]:
     """
         Creates a distance matrix from the provided list of amino acids.
 
@@ -20,10 +17,11 @@ def create_distance_matrix(aminoacid_mass_center: list[tuple[str, int, str, floa
         :returns a distance matrix
     """
     out = []
-    for i in range(len(aminoacid_mass_center)):
+    for i, row_i in enumerate(aminoacid_mass_center):
         out.append([])
-        for j in range(len(aminoacid_mass_center)):
-            out[i].append((aminoacid_mass_center[i][0], aminoacid_mass_center[i][1], aminoacid_mass_center[i][2], aminoacid_mass_center[j][0], aminoacid_mass_center[j][1], aminoacid_mass_center[j][2], utility.euclidean_distance(aminoacid_mass_center[i][3:], aminoacid_mass_center[j][3:])))
+        for j, row_j in enumerate(aminoacid_mass_center):
+            out[i].append((row_i[0], row_i[1], row_i[2],
+                           utility.euclidean_distance(aminoacid_mass_center[i][3:], aminoacid_mass_center[j][3:])))
     return out
 
 
@@ -59,51 +57,6 @@ def dump_to_file_matrix(matrix: list[list[float]], output_file_path: str):
             for j in range(len(matrix)):
                 f.write(str(matrix[i][j]) + ",")
             f.write("\n")
-
-
-def extract_gnn_data(dataset_file_name: str) -> list[tuple[str, int, str, float, float, float]]:
-    """
-        Using BioPython, reads the provided pdb input file.
-        For each amino acid obtains the center of mass, the residue name and the related protein name.
-
-        :param dataset_file_name: the name of the pdb input file
-        :returns a list of tuples, with one entry for each amino acid.
-            The entry is a tuple containing:
-                - the center of mass (x, y, z)
-                - the residue name
-                - the protein name
-    """
-    p = PDBParser(PERMISSIVE=True)
-    structure = p.get_structure('protein', dataset_file_name)
-    out = []
-
-    for chain in structure.get_chains():
-        logger.debug("processing chain: " + str(chain))
-        for residue in chain:
-            logger.debug("processing residue: " + str(residue))
-            if is_hetero(residue):
-                logger.debug("skipping residue couse it's heteroatm: " + str(residue))
-                continue
-            if residue.get_resname() == 'HOH':
-                logger.debug("skipping residue: " + str(residue))
-                continue
-            center_of_mass = residue.center_of_mass()
-            logger.debug("center of mass: " + str(center_of_mass))
-            residue_name, residue_id, protein_name = utility.get_residue_name_and_protein_name(residue, chain,
-                                                                                   dataset_file_name, logger)
-            out.append((protein_name, residue_id, residue_name, center_of_mass[0], center_of_mass[1], center_of_mass[2]))
-
-    for index, (protein_name, _, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z) in enumerate(out):
-        out[index] = (protein_name, index, residue_name, center_of_mass_x, center_of_mass_y, center_of_mass_z)
-
-    from dotenv import load_dotenv
-    load_dotenv()
-    import os
-
-    for i in range(len(out), int(os.getenv('MAX_INPUT'))):
-        out.append((0, 0, 0, 0, 0, 0))
-
-    return out
 
 
 def dump_to_file(pdb_data: list[tuple[str, int, str, float, float, float]], output_file_path: str):
